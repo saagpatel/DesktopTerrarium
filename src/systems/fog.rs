@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::components::FogWisp;
 use crate::resources::{WeatherState, WeatherType};
+use bevy::prelude::*;
 use rand::Rng;
 
 #[derive(Resource)]
@@ -26,7 +26,11 @@ pub fn fog_spawn_system(
     }
 
     let current_count = existing_fog.iter().count();
-    let target_count = if weather.current == WeatherType::Fog { 8 } else { 0 };
+    let target_count = if weather.current == WeatherType::Fog {
+        8
+    } else {
+        0
+    };
 
     // Spawn wisps if we need more
     if current_count < target_count {

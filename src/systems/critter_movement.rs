@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::components::Critter;
 use crate::events::CritterDeparted;
+use bevy::prelude::*;
 
 pub fn critter_movement_system(
     mut commands: Commands,
@@ -14,7 +14,9 @@ pub fn critter_movement_system(
 
         if critter.path_progress >= 1.0 {
             // Path complete - despawn
-            events.send(CritterDeparted { species: critter.species });
+            events.send(CritterDeparted {
+                species: critter.species,
+            });
             commands.entity(entity).despawn();
         } else {
             // Evaluate cubic Bezier curve
@@ -33,8 +35,5 @@ fn cubic_bezier(points: [Vec2; 4], t: f32) -> Vec2 {
     let mt2 = mt * mt;
     let mt3 = mt2 * mt;
 
-    points[0] * mt3
-        + points[1] * 3.0 * mt2 * t
-        + points[2] * 3.0 * mt * t2
-        + points[3] * t3
+    points[0] * mt3 + points[1] * 3.0 * mt2 * t + points[2] * 3.0 * mt * t2 + points[3] * t3
 }

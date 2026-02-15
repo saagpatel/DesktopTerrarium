@@ -40,7 +40,7 @@ impl Default for WeatherState {
         Self {
             current: WeatherType::Clear,
             target: WeatherType::Clear,
-            transition_progress: 1.0, // fully settled
+            transition_progress: 1.0,   // fully settled
             phase_duration_secs: 300.0, // 5 minutes per weather phase
             phase_elapsed: 0.0,
             transition_duration_secs: 30.0,

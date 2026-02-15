@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use crate::resources::{WeatherState, WeatherType, DebugSettings};
 use crate::events::WeatherChanged;
+use crate::resources::{DebugSettings, WeatherState};
+use bevy::prelude::*;
 
 pub fn weather_transition_system(
     mut weather: ResMut<WeatherState>,

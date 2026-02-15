@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use crate::components::{PlantSpecies, CritterSpecies};
+use crate::components::{CritterSpecies, PlantSpecies};
 use crate::resources::WeatherType;
+use bevy::prelude::*;
 
 #[derive(Event)]
 pub struct PlantStageChanged {

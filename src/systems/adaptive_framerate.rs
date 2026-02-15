@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::winit::{WinitSettings, UpdateMode};
+use bevy::winit::{UpdateMode, WinitSettings};
 use std::time::Duration;
 
 pub fn setup_framerate_limits(mut commands: Commands) {

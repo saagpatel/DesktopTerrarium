@@ -1,10 +1,7 @@
-use bevy::prelude::*;
 use crate::resources::DebugSettings;
+use bevy::prelude::*;
 
-pub fn debug_input_system(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut debug: ResMut<DebugSettings>,
-) {
+pub fn debug_input_system(keyboard: Res<ButtonInput<KeyCode>>, mut debug: ResMut<DebugSettings>) {
     // F1: Toggle overlay
     if keyboard.just_pressed(KeyCode::F1) {
         debug.show_overlay = !debug.show_overlay;

@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::components::WindLeaf;
 use crate::resources::{WeatherState, WeatherType};
+use bevy::prelude::*;
 use rand::Rng;
 
 #[derive(Resource)]
@@ -45,10 +45,7 @@ pub fn wind_spawn_system(
                     50.0,
                 ),
                 WindLeaf {
-                    velocity: Vec2::new(
-                        rng.gen_range(-200.0..-100.0),
-                        rng.gen_range(-20.0..20.0),
-                    ),
+                    velocity: Vec2::new(rng.gen_range(-200.0..-100.0), rng.gen_range(-20.0..20.0)),
                     rotation_speed: rng.gen_range(-3.0..3.0),
                     lifetime: 8.0,
                 },

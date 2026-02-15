@@ -1,7 +1,7 @@
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 use crate::components::PlantSpecies;
 use crate::resources::WeatherType;
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Serialize, Deserialize, Clone)]
 pub struct TerrariumPersistentState {
@@ -34,9 +34,21 @@ impl Default for TerrariumPersistentState {
             version: 1,
             created_at: chrono::Utc::now().to_rfc3339(),
             plants: [
-                PlantSaveData { species: PlantSpecies::Fern, stage: 0, growth_progress: 0.0 },
-                PlantSaveData { species: PlantSpecies::Moss, stage: 0, growth_progress: 0.0 },
-                PlantSaveData { species: PlantSpecies::Succulent, stage: 0, growth_progress: 0.0 },
+                PlantSaveData {
+                    species: PlantSpecies::Fern,
+                    stage: 0,
+                    growth_progress: 0.0,
+                },
+                PlantSaveData {
+                    species: PlantSpecies::Moss,
+                    stage: 0,
+                    growth_progress: 0.0,
+                },
+                PlantSaveData {
+                    species: PlantSpecies::Succulent,
+                    stage: 0,
+                    growth_progress: 0.0,
+                },
             ],
             total_active_secs: 0.0,
             longest_focus_streak_secs: 0.0,

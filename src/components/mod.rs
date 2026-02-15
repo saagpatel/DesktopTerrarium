@@ -1,9 +1,9 @@
-pub mod layer;
-pub mod plant;
 pub mod critter;
+pub mod layer;
 pub mod particle;
+pub mod plant;
 
-pub use layer::*;
-pub use plant::*;
 pub use critter::*;
+pub use layer::*;
 pub use particle::*;
+pub use plant::*;
