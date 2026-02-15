@@ -23,6 +23,6 @@ pub struct TimeVariantSet {
 
 #[derive(Component)]
 pub struct TimeVariantTag {
-    pub layer_id: u8,  // e.g., 0 = glass_container, 1 = soil
-    pub phase: u8,     // 0=morning, 1=day, 2=evening, 3=night
+    pub layer_id: u8, // e.g., 0 = glass_container, 1 = soil
+    pub phase: u8,    // 0=morning, 1=day, 2=evening, 3=night
 }

@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use crate::resources::{TimeOfDay, DebugSettings};
 use crate::components::TimeVariantTag;
+use crate::resources::{DebugSettings, TimeOfDay};
+use bevy::prelude::*;
 
 pub fn time_of_day_system(
     mut time_of_day: ResMut<TimeOfDay>,
@@ -12,7 +12,9 @@ pub fn time_of_day_system(
     if let Some(forced_phase) = debug.force_time_phase {
         // Force specific phase - show only that phase at full alpha
         for (tag, mut sprite) in &mut sprites {
-            sprite.color.set_alpha(if tag.phase == forced_phase { 1.0 } else { 0.0 });
+            sprite
+                .color
+                .set_alpha(if tag.phase == forced_phase { 1.0 } else { 0.0 });
         }
         return;
     }

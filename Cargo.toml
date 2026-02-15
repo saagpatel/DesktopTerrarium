@@ -9,7 +9,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
-anyhow = "1"
 rand = "0.8"
 dirs = "6"
 
@@ -18,3 +17,7 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[patch.crates-io]
+metal = { path = "third_party/metal" }
+accesskit_windows = { path = "third_party/accesskit_windows" }

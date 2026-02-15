@@ -2,14 +2,14 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct RainDrop {
-    pub velocity: Vec2,    // pixels per second, predominantly downward
-    pub lifetime: f32,     // seconds remaining
+    pub velocity: Vec2, // pixels per second, predominantly downward
+    pub lifetime: f32,  // seconds remaining
 }
 
 #[derive(Component)]
 pub struct FogWisp {
-    pub drift_speed: f32,  // horizontal pixels per second
-    pub alpha_phase: f32,  // radians, for sine-wave alpha oscillation
+    pub drift_speed: f32, // horizontal pixels per second
+    pub alpha_phase: f32, // radians, for sine-wave alpha oscillation
 }
 
 #[derive(Component)]

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::resources::WeatherType;
+use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct DebugSettings {

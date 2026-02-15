@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use crate::components::RainDrop;
 use crate::resources::WeatherState;
 use crate::resources::WeatherType;
+use bevy::prelude::*;
 use rand::Rng;
 
 const RAIN_SPAWN_RATE: f32 = 15.0; // drops per second
@@ -57,16 +57,9 @@ pub fn rain_spawn_system(
                     image: rain_assets.raindrop_handle.clone(),
                     ..default()
                 },
-                Transform::from_xyz(
-                    rng.gen_range(-420.0..420.0),
-                    320.0,
-                    50.0,
-                ),
+                Transform::from_xyz(rng.gen_range(-420.0..420.0), 320.0, 50.0),
                 RainDrop {
-                    velocity: Vec2::new(
-                        rng.gen_range(-10.0..10.0),
-                        rng.gen_range(-300.0..-200.0),
-                    ),
+                    velocity: Vec2::new(rng.gen_range(-10.0..10.0), rng.gen_range(-300.0..-200.0)),
                     lifetime: 3.0,
                 },
             ));
@@ -95,9 +88,7 @@ pub fn rain_update_system(
 }
 
 // Entity count safety check
-pub fn rain_limit_system(
-    rain: Query<Entity, With<RainDrop>>,
-) {
+pub fn rain_limit_system(rain: Query<Entity, With<RainDrop>>) {
     if rain.iter().count() > 200 {
         warn!("Rain particle count exceeded 200, consider reducing spawn rate");
     }

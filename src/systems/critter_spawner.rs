@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use crate::components::{Critter, CritterSpecies};
+use crate::events::CritterArrived;
 use crate::resources::BehaviorSignals;
-use crate::events::{CritterArrived, CritterDeparted};
+use bevy::prelude::*;
 use rand::Rng;
 
 pub fn critter_spawner_system(
@@ -17,7 +17,9 @@ pub fn critter_spawner_system(
 
     // Butterfly: spawns after 30 minutes of focus
     if behavior.current_focus_streak_secs >= 1800.0 {
-        let has_butterfly = existing_critters.iter().any(|c| c.species == CritterSpecies::Butterfly);
+        let has_butterfly = existing_critters
+            .iter()
+            .any(|c| c.species == CritterSpecies::Butterfly);
         if !has_butterfly && *spawn_timer > 5.0 {
             let mut rng = rand::thread_rng();
             let path = random_butterfly_path(&mut rng);
@@ -36,7 +38,9 @@ pub fn critter_spawner_system(
                 },
             ));
 
-            events.send(CritterArrived { species: CritterSpecies::Butterfly });
+            events.send(CritterArrived {
+                species: CritterSpecies::Butterfly,
+            });
             *spawn_timer = 0.0;
         }
     }
@@ -45,7 +49,9 @@ pub fn critter_spawner_system(
     if behavior.is_active && *spawn_timer > 60.0 {
         let mut rng = rand::thread_rng();
         if rng.gen::<f32>() < 0.05 {
-            let has_beetle = existing_critters.iter().any(|c| c.species == CritterSpecies::Beetle);
+            let has_beetle = existing_critters
+                .iter()
+                .any(|c| c.species == CritterSpecies::Beetle);
             if !has_beetle {
                 let path = random_butterfly_path(&mut rng);
 
@@ -63,7 +69,9 @@ pub fn critter_spawner_system(
                     },
                 ));
 
-                events.send(CritterArrived { species: CritterSpecies::Beetle });
+                events.send(CritterArrived {
+                    species: CritterSpecies::Beetle,
+                });
             }
         }
         *spawn_timer = 0.0;

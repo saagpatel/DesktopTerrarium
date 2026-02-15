@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use crate::components::Plant;
 use crate::events::PlantStageChanged;
 use crate::resources::BehaviorSignals;
+use bevy::prelude::*;
 
 const GROWTH_RATE_PER_SEC: f32 = 0.001; // ~17 minutes per stage
 
@@ -49,8 +49,11 @@ pub fn handle_plant_stage_changes(
 ) {
     for event in events.read() {
         if let Ok((plant, mut sprite)) = plants.get_mut(event.entity) {
-            let path = format!("plants/{}_stage{}.png",
-                plant.species.asset_name(), event.new_stage);
+            let path = format!(
+                "plants/{}_stage{}.png",
+                plant.species.asset_name(),
+                event.new_stage
+            );
             sprite.image = asset_server.load(&path);
         }
     }

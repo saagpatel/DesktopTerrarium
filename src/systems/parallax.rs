@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::components::SceneLayer;
+use bevy::prelude::*;
 
 const MAX_PARALLAX_PX: f32 = 15.0;
 const SMOOTHING_SPEED: f32 = 5.0;

@@ -1,11 +1,11 @@
+use crate::components::{Plant, PlantSpecies, SceneLayer, TimeVariantTag};
 use bevy::prelude::*;
-use crate::components::{SceneLayer, TimeVariantTag, Plant, PlantSpecies};
 
 // Plant slot positions (pixels from center)
 const PLANT_SLOTS: [(f32, f32); 3] = [
-    (-150.0, -80.0),  // left
-    (0.0, -100.0),    // center
-    (160.0, -70.0),   // right
+    (-150.0, -80.0), // left
+    (0.0, -100.0),   // center
+    (160.0, -70.0),  // right
 ];
 
 pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -21,7 +21,7 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         Transform::from_xyz(0.0, 0.0, 0.0),
         SceneLayer {
-            depth_factor: 0.0,  // No parallax for backdrop
+            depth_factor: 0.0, // No parallax for backdrop
             time_variant: None,
         },
     ));
@@ -32,7 +32,7 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         let alpha = if phase == 1 { 1.0 } else { 0.0 }; // day visible by default
         commands.spawn((
             Sprite {
-                image: asset_server.load(&format!("layers/glass_container_{}.png", variant_name)),
+                image: asset_server.load(format!("layers/glass_container_{}.png", variant_name)),
                 color: Color::srgba(1.0, 1.0, 1.0, alpha),
                 ..default()
             },
@@ -53,7 +53,7 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         let alpha = if phase == 1 { 1.0 } else { 0.0 }; // day visible by default
         commands.spawn((
             Sprite {
-                image: asset_server.load(&format!("layers/soil_{}.png", variant_name)),
+                image: asset_server.load(format!("layers/soil_{}.png", variant_name)),
                 color: Color::srgba(1.0, 1.0, 1.0, alpha),
                 ..default()
             },
@@ -70,12 +70,16 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     }
 
     // Spawn plants
-    let plant_species = [PlantSpecies::Fern, PlantSpecies::Moss, PlantSpecies::Succulent];
+    let plant_species = [
+        PlantSpecies::Fern,
+        PlantSpecies::Moss,
+        PlantSpecies::Succulent,
+    ];
     for (slot, (x, y)) in PLANT_SLOTS.iter().enumerate() {
         let species = plant_species[slot];
         commands.spawn((
             Sprite {
-                image: asset_server.load(&format!("plants/{}_stage0.png", species.asset_name())),
+                image: asset_server.load(format!("plants/{}_stage0.png", species.asset_name())),
                 ..default()
             },
             Transform::from_xyz(*x, *y, 30.0),
