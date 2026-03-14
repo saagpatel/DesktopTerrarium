@@ -2,3 +2,7 @@
 .DS_Store
 target/
 .codex_audit/
+dist/
+.release-work/
+.artifacts/
+.perf-results/

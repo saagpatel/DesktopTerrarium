@@ -1,0 +1,54 @@
+name: codeql-rust
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    - cron: "23 3 * * 1"
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref_name || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: CodeQL (Rust)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-codeql
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard local artifacts
+        run: ./scripts/check_local_artifacts.sh
+
+      - name: Install Linux native build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: rust
+          build-mode: manual
+
+      - name: Build
+        run: ./scripts/env/with_deterministic_env.sh cargo build --workspace --all-targets --locked
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3

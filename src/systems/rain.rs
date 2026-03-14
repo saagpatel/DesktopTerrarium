@@ -1,4 +1,5 @@
 use crate::components::RainDrop;
+use crate::resources::FeatureToggles;
 use crate::resources::WeatherState;
 use crate::resources::WeatherType;
 use bevy::prelude::*;
@@ -22,9 +23,14 @@ pub fn setup_rain_assets(mut commands: Commands, asset_server: Res<AssetServer>)
 pub fn rain_spawn_system(
     mut commands: Commands,
     mut rain_assets: ResMut<RainAssets>,
+    toggles: Res<FeatureToggles>,
     weather: Res<WeatherState>,
     time: Res<Time>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        return;
+    }
+
     // Only spawn during Rain weather
     if weather.current != WeatherType::Rain && weather.target != WeatherType::Rain {
         return;
@@ -69,9 +75,17 @@ pub fn rain_spawn_system(
 
 pub fn rain_update_system(
     mut commands: Commands,
+    toggles: Res<FeatureToggles>,
     mut rain: Query<(Entity, &mut RainDrop, &mut Transform)>,
     time: Res<Time>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        for (entity, _, _) in &mut rain {
+            commands.entity(entity).despawn();
+        }
+        return;
+    }
+
     for (entity, mut drop, mut transform) in &mut rain {
         // Move the raindrop
         transform.translation.x += drop.velocity.x * time.delta_secs();

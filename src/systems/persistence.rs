@@ -1,6 +1,11 @@
 use crate::components::Plant;
 use crate::errors::TerrariumError;
-use crate::resources::{BehaviorSignals, TerrariumPersistentState, TimeOfDay, WeatherState};
+use crate::resources::{
+    BehaviorSignals, DebugActions, DebugTelemetry, TerrariumPersistentState, TimeOfDay,
+    WeatherState,
+};
+use bevy::app::AppExit;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use std::path::{Path, PathBuf};
 
@@ -8,17 +13,30 @@ const STATE_DIR_NAME: &str = "com.desktopterrarium.app";
 const STATE_FILE_NAME: &str = "state.json";
 const TEMP_STATE_FILE_NAME: &str = "state.tmp.json";
 const SUPPORTED_STATE_VERSION: u32 = 1;
+const STATE_DIR_ENV: &str = "TERRARIUM_STATE_DIR";
 
 #[derive(Resource)]
 pub struct PersistenceTimer(pub Timer);
 
+#[derive(SystemParam)]
+pub struct TerrariumSnapshot<'w, 's> {
+    plants: Query<'w, 's, &'static Plant>,
+    behavior: Res<'w, BehaviorSignals>,
+    weather: Res<'w, WeatherState>,
+    time_of_day: Res<'w, TimeOfDay>,
+}
+
 fn state_dir() -> Result<PathBuf, TerrariumError> {
-    let dir = dirs::data_dir()
-        .ok_or_else(|| TerrariumError::StateWriteFailed {
-            path: "unknown".into(),
-            source: std::io::Error::new(std::io::ErrorKind::NotFound, "no data dir"),
-        })?
-        .join(STATE_DIR_NAME);
+    let dir = if let Some(override_dir) = std::env::var_os(STATE_DIR_ENV) {
+        PathBuf::from(override_dir)
+    } else {
+        dirs::data_dir()
+            .ok_or_else(|| TerrariumError::StateWriteFailed {
+                path: "unknown".into(),
+                source: std::io::Error::new(std::io::ErrorKind::NotFound, "no data dir"),
+            })?
+            .join(STATE_DIR_NAME)
+    };
 
     std::fs::create_dir_all(&dir).map_err(|e| TerrariumError::StateWriteFailed {
         path: dir.display().to_string(),
@@ -36,6 +54,7 @@ pub fn setup_persistence(
     mut commands: Commands,
     mut plants: Query<&mut Plant>,
     mut behavior: ResMut<BehaviorSignals>,
+    mut telemetry: ResMut<DebugTelemetry>,
     mut weather: ResMut<WeatherState>,
     mut time_of_day: ResMut<TimeOfDay>,
 ) {
@@ -44,11 +63,23 @@ pub fn setup_persistence(
         TimerMode::Repeating,
     )));
 
+    if let Ok(dir) = state_dir() {
+        let (_, final_path) = state_paths(&dir);
+        telemetry.state_file_path = Some(final_path.display().to_string());
+    }
+
     let state = match load_state() {
-        Ok(Some(state)) => state,
-        Ok(None) => TerrariumPersistentState::default(),
+        Ok(Some(state)) => {
+            telemetry.push_event("Loaded persisted terrarium state");
+            state
+        }
+        Ok(None) => {
+            telemetry.push_event("Starting with a new terrarium state");
+            TerrariumPersistentState::default()
+        }
         Err(e) => {
             warn!("Failed to load persisted state, using defaults: {}", e);
+            telemetry.push_event(format!("State load failed, using defaults: {e}"));
             TerrariumPersistentState::default()
         }
     };
@@ -96,39 +127,49 @@ fn apply_loaded_state(
 
 pub fn save_state_system(
     mut timer: ResMut<PersistenceTimer>,
+    mut actions: ResMut<DebugActions>,
+    mut app_exit: EventWriter<AppExit>,
+    mut telemetry: ResMut<DebugTelemetry>,
     mut persistent_state: ResMut<TerrariumPersistentState>,
-    plants: Query<&Plant>,
-    behavior: Res<BehaviorSignals>,
-    weather: Res<WeatherState>,
-    time_of_day: Res<TimeOfDay>,
+    snapshot: TerrariumSnapshot,
     time: Res<Time>,
 ) {
     timer.0.tick(time.delta());
+    let exit_after_save = actions.exit_after_save;
 
-    if timer.0.just_finished() {
-        for plant in &plants {
-            let slot = plant.slot as usize;
-            if slot < persistent_state.plants.len() {
-                persistent_state.plants[slot].species = plant.species;
-                persistent_state.plants[slot].stage = plant.stage.min(4);
-                persistent_state.plants[slot].growth_progress =
-                    plant.growth_progress.clamp(0.0, 1.0);
-            }
+    let save_reason = if actions.save_state {
+        actions.save_state = false;
+        Some("manual smoke save")
+    } else if timer.0.just_finished() {
+        Some("autosave")
+    } else {
+        None
+    };
+
+    if let Some(reason) = save_reason {
+        persist_snapshot(&mut persistent_state, &snapshot, &mut telemetry, reason);
+
+        if exit_after_save {
+            actions.exit_after_save = false;
+            telemetry.push_event("Exit requested after save");
+            app_exit.send(AppExit::Success);
         }
+    }
+}
 
-        persistent_state.version = SUPPORTED_STATE_VERSION;
-        if persistent_state.created_at.is_empty() {
-            persistent_state.created_at = chrono::Utc::now().to_rfc3339();
-        }
-
-        persistent_state.total_active_secs = behavior.total_active_secs.max(0.0);
-        persistent_state.longest_focus_streak_secs = behavior.longest_focus_streak_secs.max(0.0);
-        persistent_state.weather = weather.current;
-        persistent_state.time_of_day_phase = time_of_day.phase % 4;
-
-        if let Err(e) = save_state(&persistent_state) {
-            warn!("Failed to save state: {}", e);
-        }
+pub fn save_on_exit_system(
+    mut app_exit: EventReader<AppExit>,
+    mut telemetry: ResMut<DebugTelemetry>,
+    mut persistent_state: ResMut<TerrariumPersistentState>,
+    snapshot: TerrariumSnapshot,
+) {
+    if app_exit.read().next().is_some() {
+        persist_snapshot(
+            &mut persistent_state,
+            &snapshot,
+            &mut telemetry,
+            "exit save",
+        );
     }
 }
 
@@ -182,6 +223,53 @@ fn load_state_from_dir(dir: &Path) -> Result<Option<TerrariumPersistentState>, T
 fn save_state(state: &TerrariumPersistentState) -> Result<(), TerrariumError> {
     let dir = state_dir()?;
     save_state_to_dir(&dir, state)
+}
+
+fn sync_state_from_world(
+    persistent_state: &mut TerrariumPersistentState,
+    snapshot: &TerrariumSnapshot,
+) {
+    for plant in snapshot.plants.iter() {
+        let slot = plant.slot as usize;
+        if slot < persistent_state.plants.len() {
+            persistent_state.plants[slot].species = plant.species;
+            persistent_state.plants[slot].stage = plant.stage.min(4);
+            persistent_state.plants[slot].growth_progress = plant.growth_progress.clamp(0.0, 1.0);
+        }
+    }
+
+    persistent_state.version = SUPPORTED_STATE_VERSION;
+    if persistent_state.created_at.is_empty() {
+        persistent_state.created_at = chrono::Utc::now().to_rfc3339();
+    }
+
+    persistent_state.total_active_secs = snapshot.behavior.total_active_secs.max(0.0);
+    persistent_state.longest_focus_streak_secs =
+        snapshot.behavior.longest_focus_streak_secs.max(0.0);
+    persistent_state.weather = snapshot.weather.current;
+    persistent_state.time_of_day_phase = snapshot.time_of_day.phase % 4;
+}
+
+fn persist_snapshot(
+    persistent_state: &mut TerrariumPersistentState,
+    snapshot: &TerrariumSnapshot,
+    telemetry: &mut DebugTelemetry,
+    reason: &str,
+) {
+    sync_state_from_world(persistent_state, snapshot);
+
+    match save_state(persistent_state) {
+        Ok(()) => {
+            let stamp = chrono::Utc::now().format("%H:%M:%S UTC");
+            telemetry.set_save_status(format!("{reason} at {stamp}"));
+            telemetry.push_event(format!("State saved ({reason})"));
+        }
+        Err(e) => {
+            warn!("Failed to save state: {}", e);
+            telemetry.set_save_status(format!("save failed: {e}"));
+            telemetry.push_event(format!("State save failed: {e}"));
+        }
+    }
 }
 
 fn save_state_to_dir(dir: &Path, state: &TerrariumPersistentState) -> Result<(), TerrariumError> {

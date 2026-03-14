@@ -1,13 +1,22 @@
 use crate::events::WeatherChanged;
-use crate::resources::{DebugSettings, WeatherState};
+use crate::resources::{DebugSettings, FeatureToggles, WeatherState, WeatherType};
 use bevy::prelude::*;
 
 pub fn weather_transition_system(
     mut weather: ResMut<WeatherState>,
+    toggles: Res<FeatureToggles>,
     debug: Res<DebugSettings>,
     time: Res<Time>,
     mut events: EventWriter<WeatherChanged>,
 ) {
+    if !toggles.weather_transitions_enabled() {
+        weather.current = WeatherType::Clear;
+        weather.target = WeatherType::Clear;
+        weather.transition_progress = 1.0;
+        weather.phase_elapsed = 0.0;
+        return;
+    }
+
     // Handle debug overrides
     if let Some(forced_weather) = debug.force_weather {
         weather.current = forced_weather;

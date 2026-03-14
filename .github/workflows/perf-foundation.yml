@@ -1,12 +1,11 @@
-name: perf-foundation
+name: legacy-web-perf-foundation
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   perf-bundle:
+    if: ${{ hashFiles('**/package.json') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -24,6 +23,7 @@ jobs:
       - run: pnpm perf:bundle
 
   perf-build:
+    if: ${{ hashFiles('**/package.json') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,6 +40,7 @@ jobs:
       - run: pnpm perf:build
 
   perf-lighthouse:
+    if: ${{ hashFiles('**/package.json') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -65,6 +66,7 @@ jobs:
       - run: bash scripts/perf/check-assets.sh
 
   perf-memory:
+    if: ${{ hashFiles('**/package.json') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -81,7 +83,7 @@ jobs:
       - run: pnpm perf:memory
 
   perf-api:
-    if: ${{ vars.PERF_BASE_URL != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && vars.PERF_BASE_URL != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -93,7 +95,7 @@ jobs:
           BASE_URL: ${{ vars.PERF_BASE_URL }}
 
   perf-db:
-    if: ${{ vars.PERF_DATABASE_URL != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && vars.PERF_DATABASE_URL != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

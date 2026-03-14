@@ -1,5 +1,5 @@
 use crate::errors::TerrariumError;
-use crate::resources::BehaviorSignals;
+use crate::resources::{ActivityMode, BehaviorSignals, DebugSettings};
 use bevy::prelude::*;
 
 const ACTIVE_IDLE_THRESHOLD_SECS: f64 = 120.0;
@@ -53,7 +53,11 @@ fn update_behavior_counters(behavior: &mut BehaviorSignals, elapsed_secs: f64) {
     }
 }
 
-pub fn behavior_tracker_system(mut behavior: ResMut<BehaviorSignals>, time: Res<Time>) {
+pub fn behavior_tracker_system(
+    mut behavior: ResMut<BehaviorSignals>,
+    debug: Res<DebugSettings>,
+    time: Res<Time>,
+) {
     let elapsed_secs = time.delta_secs_f64();
 
     // Poll system idle time
@@ -67,8 +71,12 @@ pub fn behavior_tracker_system(mut behavior: ResMut<BehaviorSignals>, time: Res<
         }
     }
 
-    // Determine if user is active (idle < 120 seconds)
-    behavior.is_active = behavior.system_idle_secs < ACTIVE_IDLE_THRESHOLD_SECS;
+    // Determine if user is active (idle < 120 seconds), unless a debug override is active.
+    behavior.is_active = match debug.activity_mode {
+        ActivityMode::System => behavior.system_idle_secs < ACTIVE_IDLE_THRESHOLD_SECS,
+        ActivityMode::ForceActive => true,
+        ActivityMode::ForceIdle => false,
+    };
     update_behavior_counters(&mut behavior, elapsed_secs);
 }
 

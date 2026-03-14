@@ -15,6 +15,10 @@ if (typeof b !== "number" || typeof c !== "number") {
   console.error(`Metric ${metric} missing or not numeric.`);
   process.exit(2);
 }
+if (b <= 0) {
+  console.error(`Baseline for ${metric} must be greater than zero.`);
+  process.exit(2);
+}
 
 const ratio = (c - b) / b;
 console.log(JSON.stringify({ metric, baseline: b, current: c, ratio }, null, 2));

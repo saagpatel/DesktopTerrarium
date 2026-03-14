@@ -1,0 +1,190 @@
+name: release-macos
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (vX.Y.Z)"
+        required: true
+        type: string
+      sign:
+        description: "Enable Developer ID signing and publish"
+        required: true
+        type: boolean
+        default: false
+      notarize:
+        description: "Enable Apple notarization (requires sign=true)"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-macos-${{ inputs.tag || github.sha }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_REF: ${{ inputs.tag }}
+
+jobs:
+  preflight_release_gate:
+    name: Preflight release gate
+    runs-on: macos-latest
+    outputs:
+      release_sha: ${{ steps.verify_ref.outputs.release_sha }}
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-release-preflight
+    steps:
+      - name: Validate release inputs
+        run: |
+          set -euo pipefail
+          if [[ ! "${{ env.RELEASE_REF }}" =~ ^v[0-9]+(\.[0-9]+){2}([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must match vX.Y.Z (optionally with prerelease/build suffix)." >&2
+            exit 1
+          fi
+          if [[ "${{ inputs.notarize }}" == "true" && "${{ inputs.sign }}" != "true" ]]; then
+            echo "Notarization requires sign=true." >&2
+            exit 1
+          fi
+
+      - name: Checkout release ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_REF }}
+          fetch-depth: 0
+
+      - name: Verify ref resolves to tag
+        id: verify_ref
+        run: |
+          set -euo pipefail
+          git rev-parse --verify "refs/tags/${RELEASE_REF}" >/dev/null
+          tag_sha="$(git rev-list -n 1 "refs/tags/${RELEASE_REF}")"
+          head_sha="$(git rev-parse HEAD)"
+          if [[ "${tag_sha}" != "${head_sha}" ]]; then
+            echo "Checked out commit does not match tag ${RELEASE_REF}." >&2
+            exit 1
+          fi
+          echo "release_sha=${tag_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Run release gate
+        run: ./scripts/release/run_release_gate.sh
+
+  build_arch:
+    name: Build (${{ matrix.target }})
+    needs: preflight_release_gate
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-darwin, x86_64-apple-darwin]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight_release_gate.outputs.release_sha }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: ./scripts/release/macos_build_arch.sh "${{ matrix.target }}" "${{ env.RELEASE_REF }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.target }}
+          path: .release-work/${{ env.RELEASE_REF }}/${{ matrix.target }}/desktop_terrarium
+
+  package_universal:
+    name: Package universal binary
+    needs: [build_arch, preflight_release_gate]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight_release_gate.outputs.release_sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: .release-work/${{ env.RELEASE_REF }}/downloads
+      - name: Install syft
+        run: |
+          if ! command -v syft >/dev/null 2>&1; then
+            for attempt in 1 2 3; do
+              brew install syft && break
+              echo "syft install failed on attempt ${attempt}, retrying..."
+              sleep $((attempt * 5))
+            done
+          fi
+          command -v syft >/dev/null 2>&1
+      - run: ./scripts/release/macos_assemble_universal.sh "${{ env.RELEASE_REF }}"
+      - run: ./scripts/release/macos_supply_chain.sh "${{ env.RELEASE_REF }}"
+
+      - name: Sign and notarize (optional)
+        if: ${{ inputs.sign }}
+        env:
+          MACOS_CERT_P12_B64: ${{ secrets.MACOS_CERT_P12_B64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: ./scripts/release/macos_sign_notarize.sh "${{ env.RELEASE_REF }}" "${{ inputs.notarize }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: dist/${{ env.RELEASE_REF }}
+
+  attest:
+    name: Attest release artifacts
+    needs: package_universal
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist/${{ env.RELEASE_REF }}
+
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/${{ env.RELEASE_REF }}/DesktopTerrarium-macos-universal.tar.gz
+            dist/${{ env.RELEASE_REF }}/DesktopTerrarium-macos-universal.spdx.json
+            dist/${{ env.RELEASE_REF }}/SHA256SUMS
+
+  publish:
+    name: Publish GitHub release (signed only)
+    if: ${{ inputs.sign }}
+    needs: [package_universal, attest]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: dist/${{ env.RELEASE_REF }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_REF }}
+          files: |
+            dist/${{ env.RELEASE_REF }}/DesktopTerrarium-macos-universal.tar.gz
+            dist/${{ env.RELEASE_REF }}/DesktopTerrarium-macos-universal.spdx.json
+            dist/${{ env.RELEASE_REF }}/SHA256SUMS

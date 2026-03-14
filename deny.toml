@@ -1,0 +1,31 @@
+[graph]
+all-features = true
+
+[advisories]
+ignore = []
+
+[licenses]
+allow = [
+  "MIT",
+  "MIT-0",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "CC0-1.0",
+]
+
+[bans]
+# The Bevy/wgpu stack currently pulls in a large set of transitive duplicate
+# versions that are noisy but not actionable for this single-binary app. Keep
+# the gate focused on hard failures (advisories, sources, licenses, explicit bans).
+multiple-versions = "allow"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

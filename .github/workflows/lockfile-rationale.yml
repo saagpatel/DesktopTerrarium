@@ -3,6 +3,12 @@ name: lockfile-rationale
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: lockfile-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   enforce:
@@ -12,13 +18,19 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        if: github.event_name == 'pull_request'
       - uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c
+        if: github.event_name == 'pull_request'
         id: changed
       - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
-        if: contains(steps.changed.outputs.all_changed_files, 'pnpm-lock.yaml') || contains(steps.changed.outputs.all_changed_files, 'package-lock.json') || contains(steps.changed.outputs.all_changed_files, 'yarn.lock')
+        if: github.event_name == 'pull_request' && (contains(steps.changed.outputs.all_changed_files, 'Cargo.lock') || contains(steps.changed.outputs.all_changed_files, 'pnpm-lock.yaml') || contains(steps.changed.outputs.all_changed_files, 'package-lock.json') || contains(steps.changed.outputs.all_changed_files, 'yarn.lock'))
         with:
           script: |
             const body = (context.payload.pull_request?.body || "");
             if (!/## Lockfile rationale/i.test(body)) {
               core.setFailed("Lockfile changed but PR body lacks 'Lockfile rationale' section.");
             }
+      - name: Merge queue passthrough
+        if: github.event_name == 'merge_group'
+        run: |
+          echo "merge_group event: lockfile rationale is enforced on the original PR."

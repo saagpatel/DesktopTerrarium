@@ -4,11 +4,21 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
     name: Quality (macOS)
     runs-on: macos-latest
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-quality
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,27 +31,39 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Install cargo-audit
-        uses: taiki-e/install-action@cargo-audit
+      - name: Install nextest
+        uses: taiki-e/install-action@nextest
 
       - name: Format
-        run: cargo fmt --all -- --check
+        run: ./scripts/env/with_deterministic_env.sh cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --all-targets --no-deps
+        run: ./scripts/env/with_deterministic_env.sh cargo clippy --workspace --all-targets --no-deps -- -D warnings
 
-      - name: Test
-        run: cargo test
+      - name: Test (nextest)
+        run: ./scripts/env/with_deterministic_env.sh cargo nextest run --workspace --all-targets --profile release --locked --junit-path .artifacts/nextest-junit.xml
+
+      - name: Doctest
+        run: ./scripts/env/with_deterministic_env.sh cargo test --workspace --doc --locked
 
       - name: Build
-        run: cargo build
+        run: ./scripts/env/with_deterministic_env.sh cargo build --workspace --all-targets --locked
 
-      - name: Audit
-        run: cargo audit
+      - name: Upload nextest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextest-junit
+          path: .artifacts/nextest-junit.xml
+          if-no-files-found: ignore
 
-  non_macos_compile:
-    name: Non-macOS Compile Check
+  supply_chain:
+    name: Supply Chain (deny + audit)
     runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-supply-chain
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,7 +71,48 @@ jobs:
       - name: Guard local artifacts
         run: ./scripts/check_local_artifacts.sh
 
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@cargo-deny
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Dependency review
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+      - name: cargo deny
+        run: ./scripts/env/with_deterministic_env.sh cargo deny check --config deny.toml advisories bans licenses sources
+
+      - name: cargo audit
+        run: ./scripts/env/with_deterministic_env.sh cargo audit --deny warnings
+
+  non_macos_compile:
+    name: Non-macOS Compile Check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-compile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard local artifacts
+        shell: bash
+        run: ./scripts/check_local_artifacts.sh
+
       - name: Install Linux native build deps
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev
@@ -57,5 +120,6 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Native Linux check
-        run: cargo check
+      - name: Native compile check
+        shell: bash
+        run: ./scripts/env/with_deterministic_env.sh cargo check --workspace --all-targets --locked

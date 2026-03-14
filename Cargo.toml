@@ -2,6 +2,12 @@
 name = "desktop_terrarium"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+
+[features]
+default = ["stable-core", "experimental-weather"]
+stable-core = []
+experimental-weather = []
 
 [dependencies]
 bevy = { version = "0.15", features = ["wayland"] }

@@ -3,14 +3,19 @@ pub mod behavior_tracker;
 pub mod critter_movement;
 pub mod critter_spawner;
 pub mod debug_ui;
+pub mod feature_controls;
+#[cfg(feature = "experimental-weather")]
 pub mod fog;
 pub mod parallax;
 pub mod persistence;
 pub mod plant_growth;
+#[cfg(feature = "experimental-weather")]
 pub mod rain;
 pub mod setup;
 pub mod time_of_day;
+#[cfg(feature = "experimental-weather")]
 pub mod weather_transition;
+#[cfg(feature = "experimental-weather")]
 pub mod wind;
 
 pub use adaptive_framerate::*;
@@ -18,12 +23,17 @@ pub use behavior_tracker::*;
 pub use critter_movement::*;
 pub use critter_spawner::*;
 pub use debug_ui::*;
+pub use feature_controls::*;
+#[cfg(feature = "experimental-weather")]
 pub use fog::*;
 pub use parallax::*;
 pub use persistence::*;
 pub use plant_growth::*;
+#[cfg(feature = "experimental-weather")]
 pub use rain::*;
 pub use setup::*;
 pub use time_of_day::*;
+#[cfg(feature = "experimental-weather")]
 pub use weather_transition::*;
+#[cfg(feature = "experimental-weather")]
 pub use wind::*;

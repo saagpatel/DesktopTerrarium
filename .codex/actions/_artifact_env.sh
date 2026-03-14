@@ -12,7 +12,13 @@ else
 fi
 
 RUN_ID="${CODEX_RUN_ID:-$(date +%Y%m%dT%H%M%S)-$$}"
-CODEX_CACHE_ROOT="${CODEX_CACHE_ROOT:-/Users/d/Library/Caches/Codex}"
+if [[ -z "${CODEX_CACHE_ROOT:-}" ]]; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    CODEX_CACHE_ROOT="$HOME/Library/Caches/Codex"
+  else
+    CODEX_CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/codex"
+  fi
+fi
 CODEX_BUILD_ROOT="${CODEX_BUILD_ROOT:-$CODEX_CACHE_ROOT/build}"
 CODEX_LOG_ROOT="${CODEX_LOG_ROOT:-$CODEX_CACHE_ROOT/logs}"
 

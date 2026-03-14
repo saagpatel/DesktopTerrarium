@@ -1,5 +1,5 @@
 use crate::components::FogWisp;
-use crate::resources::{WeatherState, WeatherType};
+use crate::resources::{FeatureToggles, WeatherState, WeatherType};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -17,9 +17,14 @@ pub fn setup_fog_assets(mut commands: Commands, asset_server: Res<AssetServer>) 
 pub fn fog_spawn_system(
     mut commands: Commands,
     fog_assets: Res<FogAssets>,
+    toggles: Res<FeatureToggles>,
     weather: Res<WeatherState>,
     existing_fog: Query<&FogWisp>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        return;
+    }
+
     // Only manage fog during Fog weather
     if weather.current != WeatherType::Fog && weather.target != WeatherType::Fog {
         return;
@@ -55,10 +60,18 @@ pub fn fog_spawn_system(
 
 pub fn fog_update_system(
     mut commands: Commands,
+    toggles: Res<FeatureToggles>,
     mut fog: Query<(Entity, &mut FogWisp, &mut Transform, &mut Sprite)>,
     weather: Res<WeatherState>,
     time: Res<Time>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        for (entity, _, _, _) in &mut fog {
+            commands.entity(entity).despawn();
+        }
+        return;
+    }
+
     let should_have_fog = weather.current == WeatherType::Fog || weather.target == WeatherType::Fog;
 
     for (entity, mut wisp, mut transform, mut sprite) in &mut fog {

@@ -4,7 +4,10 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-mapfile -t tracked_files < <(git ls-files)
+tracked_files=()
+while IFS= read -r path; do
+  tracked_files+=("$path")
+done < <(git ls-files)
 offenders=()
 
 for path in "${tracked_files[@]}"; do

@@ -1,0 +1,43 @@
+name: native-perf
+
+on:
+  pull_request:
+    branches: [main, master]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+concurrency:
+  group: native-perf-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  native-perf:
+    name: Native Perf (Rust)
+    runs-on: macos-latest
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target-native-perf
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Guard local artifacts
+        run: ./scripts/check_local_artifacts.sh
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Measure native perf
+        run: ./scripts/perf/native-smoke.sh
+
+      - name: Compare against baseline
+        run: ./scripts/perf/compare-native-metrics.sh .perf-baselines/native.json .perf-results/native.json
+
+      - name: Upload native perf result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-perf-results
+          path: .perf-results/native.json

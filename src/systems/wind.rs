@@ -1,5 +1,5 @@
 use crate::components::WindLeaf;
-use crate::resources::{WeatherState, WeatherType};
+use crate::resources::{FeatureToggles, WeatherState, WeatherType};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -19,9 +19,14 @@ pub fn setup_wind_assets(mut commands: Commands, asset_server: Res<AssetServer>)
 pub fn wind_spawn_system(
     mut commands: Commands,
     mut wind_assets: ResMut<WindAssets>,
+    toggles: Res<FeatureToggles>,
     weather: Res<WeatherState>,
     time: Res<Time>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        return;
+    }
+
     // Only spawn during Wind weather
     if weather.current != WeatherType::Wind && weather.target != WeatherType::Wind {
         return;
@@ -56,9 +61,17 @@ pub fn wind_spawn_system(
 
 pub fn wind_update_system(
     mut commands: Commands,
+    toggles: Res<FeatureToggles>,
     mut leaves: Query<(Entity, &mut WindLeaf, &mut Transform)>,
     time: Res<Time>,
 ) {
+    if !toggles.weather_particles_enabled() {
+        for (entity, _, _) in &mut leaves {
+            commands.entity(entity).despawn();
+        }
+        return;
+    }
+
     for (entity, mut leaf, mut transform) in &mut leaves {
         // Move the leaf
         transform.translation.x += leaf.velocity.x * time.delta_secs();

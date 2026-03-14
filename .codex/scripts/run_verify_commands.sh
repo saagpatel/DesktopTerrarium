@@ -8,6 +8,11 @@ if [[ ! -f "$COMMANDS_FILE" ]]; then
   exit 2
 fi
 
+if [[ -f .codex/actions/_artifact_env.sh ]]; then
+  # shellcheck source=/dev/null
+  source .codex/actions/_artifact_env.sh
+fi
+
 while IFS= read -r cmd || [[ -n "$cmd" ]]; do
   [[ -z "${cmd//[[:space:]]/}" ]] && continue
   [[ "$cmd" =~ ^[[:space:]]*# ]] && continue
