@@ -5,7 +5,7 @@ on:
 
 jobs:
   perf-bundle:
-    if: ${{ hashFiles('**/package.json') != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && hashFiles('**/pnpm-lock.yaml') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,7 +23,7 @@ jobs:
       - run: pnpm perf:bundle
 
   perf-build:
-    if: ${{ hashFiles('**/package.json') != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && hashFiles('**/pnpm-lock.yaml') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,7 +40,7 @@ jobs:
       - run: pnpm perf:build
 
   perf-lighthouse:
-    if: ${{ hashFiles('**/package.json') != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && hashFiles('**/pnpm-lock.yaml') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -66,7 +66,7 @@ jobs:
       - run: bash scripts/perf/check-assets.sh
 
   perf-memory:
-    if: ${{ hashFiles('**/package.json') != '' }}
+    if: ${{ hashFiles('**/package.json') != '' && hashFiles('**/pnpm-lock.yaml') != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

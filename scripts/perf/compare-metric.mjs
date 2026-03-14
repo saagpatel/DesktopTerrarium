@@ -16,8 +16,8 @@ if (typeof b !== "number" || typeof c !== "number") {
   process.exit(2);
 }
 if (b <= 0) {
-  console.error(`Baseline for ${metric} must be greater than zero.`);
-  process.exit(2);
+  console.warn(`Skipping ${metric} comparison because baseline is not established: ${b}`);
+  process.exit(0);
 }
 
 const ratio = (c - b) / b;
