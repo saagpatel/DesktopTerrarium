@@ -4,8 +4,8 @@ set -euo pipefail
 COMMANDS_FILE="${1:-.codex/verify.commands}"
 
 if [[ ! -f "$COMMANDS_FILE" ]]; then
-  echo "Missing $COMMANDS_FILE"
-  exit 2
+  echo "missing verify commands file: $COMMANDS_FILE" >&2
+  exit 1
 fi
 
 if [[ -f .codex/actions/_artifact_env.sh ]]; then
@@ -13,10 +13,15 @@ if [[ -f .codex/actions/_artifact_env.sh ]]; then
   source .codex/actions/_artifact_env.sh
 fi
 
+failed=0
 while IFS= read -r cmd || [[ -n "$cmd" ]]; do
   [[ -z "${cmd//[[:space:]]/}" ]] && continue
   [[ "$cmd" =~ ^[[:space:]]*# ]] && continue
-
   echo ">> $cmd"
-  eval "$cmd"
+  if ! bash -lc "$cmd"; then
+    failed=1
+    break
+  fi
 done < "$COMMANDS_FILE"
+
+exit "$failed"
