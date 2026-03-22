@@ -11,6 +11,7 @@ pub mod persistence;
 pub mod plant_growth;
 #[cfg(feature = "experimental-weather")]
 pub mod rain;
+pub mod scene_mood;
 pub mod setup;
 pub mod time_of_day;
 #[cfg(feature = "experimental-weather")]
@@ -31,6 +32,7 @@ pub use persistence::*;
 pub use plant_growth::*;
 #[cfg(feature = "experimental-weather")]
 pub use rain::*;
+pub use scene_mood::*;
 pub use setup::*;
 pub use time_of_day::*;
 #[cfg(feature = "experimental-weather")]

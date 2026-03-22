@@ -22,13 +22,22 @@ pub fn critter_movement_system(
             // Evaluate cubic Bezier curve
             let t = critter.path_progress;
             let pos = cubic_bezier(critter.path, t);
-            transform.translation.x = pos.x;
-            transform.translation.y = pos.y;
+            transform.translation = pos;
+
+            let lookahead = cubic_bezier(critter.path, (t + 0.02).min(1.0));
+            let direction = (lookahead - pos).normalize_or_zero();
+            if direction.length_squared() > 0.0 {
+                let yaw = direction.x.atan2(direction.z);
+                let pitch = -direction
+                    .y
+                    .atan2(Vec2::new(direction.x, direction.z).length());
+                transform.rotation = Quat::from_euler(EulerRot::YXZ, yaw, pitch * 0.35, 0.0);
+            }
         }
     }
 }
 
-fn cubic_bezier(points: [Vec2; 4], t: f32) -> Vec2 {
+fn cubic_bezier(points: [Vec3; 4], t: f32) -> Vec3 {
     let t2 = t * t;
     let t3 = t2 * t;
     let mt = 1.0 - t;

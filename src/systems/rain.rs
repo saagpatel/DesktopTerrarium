@@ -2,6 +2,7 @@ use crate::components::RainDrop;
 use crate::resources::FeatureToggles;
 use crate::resources::WeatherState;
 use crate::resources::WeatherType;
+use crate::systems::setup::SceneAssetHandles;
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -9,13 +10,11 @@ const RAIN_SPAWN_RATE: f32 = 15.0; // drops per second
 
 #[derive(Resource)]
 pub struct RainAssets {
-    pub raindrop_handle: Handle<Image>,
     pub spawn_timer: Timer,
 }
 
-pub fn setup_rain_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_rain_assets(mut commands: Commands) {
     commands.insert_resource(RainAssets {
-        raindrop_handle: asset_server.load("particles/raindrop.png"),
         spawn_timer: Timer::from_seconds(1.0 / RAIN_SPAWN_RATE, TimerMode::Repeating),
     });
 }
@@ -23,6 +22,7 @@ pub fn setup_rain_assets(mut commands: Commands, asset_server: Res<AssetServer>)
 pub fn rain_spawn_system(
     mut commands: Commands,
     mut rain_assets: ResMut<RainAssets>,
+    scene_assets: Res<SceneAssetHandles>,
     toggles: Res<FeatureToggles>,
     weather: Res<WeatherState>,
     time: Res<Time>,
@@ -59,14 +59,21 @@ pub fn rain_spawn_system(
         // Spawn rain drops based on multiplier
         if rng.gen::<f32>() < spawn_multiplier {
             commands.spawn((
-                Sprite {
-                    image: rain_assets.raindrop_handle.clone(),
-                    ..default()
-                },
-                Transform::from_xyz(rng.gen_range(-420.0..420.0), 320.0, 50.0),
+                Mesh3d(scene_assets.cuboid_mesh.clone()),
+                MeshMaterial3d(scene_assets.rain_material.clone()),
+                Transform::from_xyz(
+                    rng.gen_range(-2.6..2.6),
+                    rng.gen_range(3.8..4.8),
+                    rng.gen_range(-1.9..1.9),
+                )
+                .with_scale(Vec3::new(0.02, 0.26, 0.02)),
                 RainDrop {
-                    velocity: Vec2::new(rng.gen_range(-10.0..10.0), rng.gen_range(-300.0..-200.0)),
-                    lifetime: 3.0,
+                    velocity: Vec3::new(
+                        rng.gen_range(-0.05..0.05),
+                        rng.gen_range(-4.6..-3.4),
+                        rng.gen_range(-0.12..0.12),
+                    ),
+                    lifetime: 1.8,
                 },
             ));
         }
@@ -88,14 +95,14 @@ pub fn rain_update_system(
 
     for (entity, mut drop, mut transform) in &mut rain {
         // Move the raindrop
-        transform.translation.x += drop.velocity.x * time.delta_secs();
-        transform.translation.y += drop.velocity.y * time.delta_secs();
+        transform.translation += drop.velocity * time.delta_secs();
+        transform.rotate_local_z(2.4 * time.delta_secs());
 
         // Update lifetime
         drop.lifetime -= time.delta_secs();
 
-        // Despawn if expired or below window
-        if drop.lifetime <= 0.0 || transform.translation.y < -320.0 {
+        // Despawn if expired or below the terrarium volume
+        if drop.lifetime <= 0.0 || transform.translation.y < -0.95 {
             commands.entity(entity).despawn();
         }
     }

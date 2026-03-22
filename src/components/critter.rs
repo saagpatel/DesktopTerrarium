@@ -1,3 +1,4 @@
+use crate::components::CritterPathId;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +10,8 @@ pub struct Critter {
     /// Speed multiplier (units of path_progress per second). Default 0.05 = 20 second traversal.
     pub speed: f32,
     /// Control points for cubic Bezier curve (4 points).
-    pub path: [Vec2; 4],
+    pub path: [Vec3; 4],
+    pub path_id: CritterPathId,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]

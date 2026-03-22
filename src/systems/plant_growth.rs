@@ -1,6 +1,7 @@
 use crate::components::Plant;
 use crate::events::PlantStageChanged;
-use crate::resources::{BehaviorSignals, DebugActions, DebugSettings};
+use crate::resources::{BehaviorSignals, DebugActions, DebugSettings, SceneArtCatalog};
+use crate::systems::setup::{respawn_plant_visual, SceneAssetHandles};
 use bevy::prelude::*;
 
 const GROWTH_RATE_PER_SEC: f32 = 0.001; // ~17 minutes per stage
@@ -73,18 +74,22 @@ pub fn debug_advance_plants_system(
 }
 
 pub fn handle_plant_stage_changes(
+    mut commands: Commands,
+    assets: Res<SceneAssetHandles>,
+    art_catalog: Res<SceneArtCatalog>,
     mut events: EventReader<PlantStageChanged>,
-    mut plants: Query<(&Plant, &mut Sprite)>,
-    asset_server: Res<AssetServer>,
+    plants: Query<&Plant>,
 ) {
     for event in events.read() {
-        if let Ok((plant, mut sprite)) = plants.get_mut(event.entity) {
-            let path = format!(
-                "plants/{}_stage{}.png",
-                plant.species.asset_name(),
-                event.new_stage
+        if let Ok(plant) = plants.get(event.entity) {
+            respawn_plant_visual(
+                &mut commands,
+                event.entity,
+                plant.species,
+                event.new_stage,
+                &assets,
+                &art_catalog,
             );
-            sprite.image = asset_server.load(&path);
         }
     }
 }

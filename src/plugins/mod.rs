@@ -12,6 +12,7 @@ impl Plugin for TerrariumPlugin {
             .init_resource::<FeatureToggles>()
             .init_resource::<BehaviorSignals>()
             .init_resource::<DebugSettings>()
+            .init_resource::<SceneMoodState>()
             .init_resource::<DebugActions>()
             .init_resource::<DebugTelemetry>()
             .init_resource::<SmokeScript>()
@@ -22,6 +23,7 @@ impl Plugin for TerrariumPlugin {
             .add_systems(
                 Startup,
                 (
+                    systems::setup::setup_scene_art_catalog,
                     systems::setup::setup_scene,
                     systems::persistence::setup_persistence,
                     #[cfg(feature = "experimental-weather")]
@@ -40,6 +42,7 @@ impl Plugin for TerrariumPlugin {
                 (
                     systems::parallax::parallax_system,
                     systems::time_of_day::time_of_day_system,
+                    systems::scene_mood::scene_mood_system,
                     systems::feature_controls::enforce_feature_fallbacks,
                     systems::plant_growth::handle_plant_stage_changes,
                     #[cfg(feature = "experimental-weather")]
@@ -52,6 +55,11 @@ impl Plugin for TerrariumPlugin {
                     systems::fog::fog_spawn_system,
                     #[cfg(feature = "experimental-weather")]
                     systems::fog::fog_update_system,
+                ),
+            )
+            .add_systems(
+                Update,
+                (
                     #[cfg(feature = "experimental-weather")]
                     systems::wind::wind_spawn_system,
                     #[cfg(feature = "experimental-weather")]
@@ -64,6 +72,7 @@ impl Plugin for TerrariumPlugin {
                     systems::persistence::save_state_system,
                     systems::debug_ui::record_milestone_events_system,
                     systems::debug_ui::update_debug_overlay_system,
+                    systems::scene_mood::wind_reactive_system,
                 ),
             )
             .add_systems(

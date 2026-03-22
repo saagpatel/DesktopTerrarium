@@ -1,43 +1,47 @@
-use crate::components::SceneLayer;
+use crate::components::MainTerrariumCamera;
 use bevy::prelude::*;
 
-const MAX_PARALLAX_PX: f32 = 15.0;
-const SMOOTHING_SPEED: f32 = 5.0;
+const CAMERA_SWAY_X: f32 = 0.18;
+const CAMERA_SWAY_Y: f32 = 0.12;
+const CAMERA_IDLE_BOB: f32 = 0.06;
+const CAMERA_SMOOTHING: f32 = 4.0;
 
 pub fn parallax_system(
-    windows: Query<&Window>,
-    mut layers: Query<(&SceneLayer, &mut Transform)>,
     time: Res<Time>,
+    windows: Query<&Window>,
+    mut camera: Query<(&MainTerrariumCamera, &mut Transform)>,
 ) {
-    let window = match windows.get_single() {
-        Ok(w) => w,
-        Err(_) => return,
+    let Ok(window) = windows.get_single() else {
+        return;
+    };
+    let Ok((rig, mut transform)) = camera.get_single_mut() else {
+        return;
     };
 
-    let cursor_pos = window.cursor_position();
-    let (width, height) = (window.width(), window.height());
+    let cursor_offset = window
+        .cursor_position()
+        .map(|pos| {
+            let offset = pos - Vec2::new(window.width() / 2.0, window.height() / 2.0);
+            offset / Vec2::new(window.width() / 2.0, window.height() / 2.0)
+        })
+        .unwrap_or(Vec2::ZERO);
 
-    // Calculate target offset
-    let target_offset = if let Some(pos) = cursor_pos {
-        // Convert cursor position to offset from center
-        let offset = pos - Vec2::new(width / 2.0, height / 2.0);
-        // Normalize to -1..1 range
-        let normalized = offset / Vec2::new(width / 2.0, height / 2.0);
-        normalized * MAX_PARALLAX_PX
-    } else {
-        // Cursor outside window - drift back to center
-        Vec2::ZERO
-    };
+    let idle_offset = Vec3::new(
+        (time.elapsed_secs() * 0.35).sin() * 0.04,
+        (time.elapsed_secs() * 0.7).sin() * CAMERA_IDLE_BOB,
+        0.0,
+    );
 
-    // Apply parallax to each layer with smoothing
-    for (layer, mut transform) in &mut layers {
-        let current_offset = Vec2::new(transform.translation.x, transform.translation.y);
-        let layer_target = target_offset * layer.depth_factor;
+    let target_translation = rig.base_translation
+        + Vec3::new(
+            cursor_offset.x * CAMERA_SWAY_X,
+            cursor_offset.y * CAMERA_SWAY_Y,
+            cursor_offset.x.abs() * 0.05,
+        )
+        + idle_offset;
 
-        // Lerp toward target
-        let new_offset = current_offset.lerp(layer_target, SMOOTHING_SPEED * time.delta_secs());
-
-        transform.translation.x = new_offset.x;
-        transform.translation.y = new_offset.y;
-    }
+    transform.translation = transform
+        .translation
+        .lerp(target_translation, CAMERA_SMOOTHING * time.delta_secs());
+    transform.look_at(rig.target, Vec3::Y);
 }

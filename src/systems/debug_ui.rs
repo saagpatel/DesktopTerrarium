@@ -1,8 +1,8 @@
-use crate::components::{Critter, CritterSpecies, Plant};
+use crate::components::{Critter, CritterSpecies, Plant, PlantAnchorId};
 use crate::events::{CritterArrived, CritterDeparted, PlantStageChanged, WeatherChanged};
 use crate::resources::{
     ActivityMode, BehaviorSignals, DebugActions, DebugSettings, DebugTelemetry, FeatureToggles,
-    SmokeScript, TimeOfDay, WeatherState, WeatherType,
+    SceneMoodState, SmokeScript, TerrariumScenePreset, TimeOfDay, WeatherState, WeatherType,
 };
 use crate::systems::persistence::PersistenceTimer;
 use bevy::ecs::system::SystemParam;
@@ -27,6 +27,7 @@ pub struct DebugOverlaySnapshot<'w, 's> {
     time_of_day: Res<'w, TimeOfDay>,
     toggles: Res<'w, FeatureToggles>,
     weather: Res<'w, WeatherState>,
+    scene_mood: Res<'w, SceneMoodState>,
 }
 
 pub fn setup_debug_overlay(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -260,8 +261,10 @@ pub fn update_debug_overlay_system(
         .plants
         .iter()
         .map(|plant| {
+            let anchor = PlantAnchorId::from_slot(plant.slot);
             format!(
-                "slot {} {:?}: stage {} ({:.0}%)",
+                "{} / slot {} {:?}: stage {} ({:.0}%)",
+                anchor.label(),
                 plant.slot,
                 plant.species,
                 plant.stage,
@@ -307,11 +310,15 @@ pub fn update_debug_overlay_system(
             .collect::<Vec<_>>()
             .join("\n")
     };
+    let scene_preset = match snapshot.scene_mood.preset {
+        TerrariumScenePreset::ConservatoryDesk => "conservatory-desk",
+    };
 
     **text = format!(
         "Desktop Terrarium Debug\n\
 controls: F2 phase | F3 activity | F4 weather | F5 time | F6 growth | F7 stage+1 | F8 beetle | F9 butterfly | F10 save\n\
 \n\
+scene: preset={} anchor-layout=left/hero/right wetness={:.2} haze={:.2}\n\
 time: {} phase={} progress={:.0}% forced={}\n\
 weather: mode={:?} current={:?} target={:?} transition={:.0}% forced={}\n\
 activity: mode={} active={} idle={:.1}s streak={:.1}s total={:.1}s\n\
@@ -322,6 +329,9 @@ persistence: next autosave in {:.1}s | last save={} \n\
 state file: {}\n\
 \n\
 recent events:\n{}",
+        scene_preset,
+        snapshot.scene_mood.current.wetness,
+        snapshot.scene_mood.current.haze_alpha,
         snapshot.time_of_day.phase_name(),
         snapshot.time_of_day.phase,
         snapshot.time_of_day.progress * 100.0,

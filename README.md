@@ -65,6 +65,11 @@ Disk tradeoff:
 ## Smoke testing
 
 Exact smoke instructions live in `docs/operations/local-smoke-walkthrough.md`.
+Visual art direction and import pipeline docs live in:
+
+- `docs/operations/visual-style-bible.md`
+- `docs/operations/asset-production-brief.md`
+- `docs/operations/asset-import-contract.md`
 
 Fast automated smoke against an isolated temp state directory:
 

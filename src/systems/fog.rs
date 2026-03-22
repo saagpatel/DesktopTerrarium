@@ -1,22 +1,20 @@
 use crate::components::FogWisp;
 use crate::resources::{FeatureToggles, WeatherState, WeatherType};
+use crate::systems::setup::SceneAssetHandles;
 use bevy::prelude::*;
 use rand::Rng;
 
 #[derive(Resource)]
-pub struct FogAssets {
-    pub fog_wisp_handle: Handle<Image>,
-}
+pub struct FogAssets;
 
-pub fn setup_fog_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.insert_resource(FogAssets {
-        fog_wisp_handle: asset_server.load("particles/fog_wisp.png"),
-    });
+pub fn setup_fog_assets(mut commands: Commands) {
+    commands.insert_resource(FogAssets);
 }
 
 pub fn fog_spawn_system(
     mut commands: Commands,
-    fog_assets: Res<FogAssets>,
+    _fog_assets: Res<FogAssets>,
+    scene_assets: Res<SceneAssetHandles>,
     toggles: Res<FeatureToggles>,
     weather: Res<WeatherState>,
     existing_fog: Query<&FogWisp>,
@@ -41,17 +39,20 @@ pub fn fog_spawn_system(
     if current_count < target_count {
         let mut rng = rand::thread_rng();
         commands.spawn((
-            Sprite {
-                image: fog_assets.fog_wisp_handle.clone(),
-                ..default()
-            },
+            Mesh3d(scene_assets.sphere_mesh.clone()),
+            MeshMaterial3d(scene_assets.fog_material.clone()),
             Transform::from_xyz(
-                rng.gen_range(-450.0..450.0),
-                rng.gen_range(-250.0..250.0),
-                50.0,
-            ),
+                rng.gen_range(-2.6..2.6),
+                rng.gen_range(0.35..2.3),
+                rng.gen_range(-1.7..1.8),
+            )
+            .with_scale(Vec3::new(
+                rng.gen_range(0.45..0.9),
+                rng.gen_range(0.18..0.35),
+                rng.gen_range(0.45..0.9),
+            )),
             FogWisp {
-                drift_speed: rng.gen_range(10.0..30.0),
+                drift_speed: rng.gen_range(0.05..0.18),
                 alpha_phase: rng.gen_range(0.0..std::f32::consts::TAU),
             },
         ));
@@ -61,8 +62,14 @@ pub fn fog_spawn_system(
 pub fn fog_update_system(
     mut commands: Commands,
     toggles: Res<FeatureToggles>,
-    mut fog: Query<(Entity, &mut FogWisp, &mut Transform, &mut Sprite)>,
+    mut fog: Query<(
+        Entity,
+        &mut FogWisp,
+        &mut Transform,
+        &MeshMaterial3d<StandardMaterial>,
+    )>,
     weather: Res<WeatherState>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
     if !toggles.weather_particles_enabled() {
@@ -74,20 +81,22 @@ pub fn fog_update_system(
 
     let should_have_fog = weather.current == WeatherType::Fog || weather.target == WeatherType::Fog;
 
-    for (entity, mut wisp, mut transform, mut sprite) in &mut fog {
+    for (entity, mut wisp, mut transform, material) in &mut fog {
         if !should_have_fog {
             commands.entity(entity).despawn();
             continue;
         }
 
-        // Drift horizontally
+        // Drift and softly bob across the vessel.
         transform.translation.x += wisp.drift_speed * time.delta_secs();
+        transform.translation.z += (wisp.alpha_phase * 0.7).sin() * 0.03 * time.delta_secs();
+        transform.translation.y += (wisp.alpha_phase * 1.1).cos() * 0.02 * time.delta_secs();
 
-        // Wrap around screen
-        if transform.translation.x > 450.0 {
-            transform.translation.x = -450.0;
-        } else if transform.translation.x < -450.0 {
-            transform.translation.x = 450.0;
+        // Wrap around terrarium width.
+        if transform.translation.x > 2.8 {
+            transform.translation.x = -2.8;
+        } else if transform.translation.x < -2.8 {
+            transform.translation.x = 2.8;
         }
 
         // Oscillate alpha
@@ -105,6 +114,13 @@ pub fn fog_update_system(
             weather.transition_progress
         };
 
-        sprite.color.set_alpha(base_alpha * transition_alpha);
+        if let Some(material) = materials.get_mut(&material.0) {
+            material.base_color = Color::srgba(
+                0.88,
+                0.93,
+                0.97,
+                (base_alpha * transition_alpha).clamp(0.02, 0.24),
+            );
+        }
     }
 }

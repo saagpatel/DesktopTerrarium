@@ -1,4 +1,3 @@
-use crate::components::TimeVariantTag;
 use crate::resources::{DebugSettings, TimeOfDay};
 use bevy::prelude::*;
 
@@ -6,16 +5,11 @@ pub fn time_of_day_system(
     mut time_of_day: ResMut<TimeOfDay>,
     debug: Res<DebugSettings>,
     time: Res<Time>,
-    mut sprites: Query<(&TimeVariantTag, &mut Sprite)>,
 ) {
     // Handle debug overrides
     if let Some(forced_phase) = debug.force_time_phase {
-        // Force specific phase - show only that phase at full alpha
-        for (tag, mut sprite) in &mut sprites {
-            sprite
-                .color
-                .set_alpha(if tag.phase == forced_phase { 1.0 } else { 0.0 });
-        }
+        time_of_day.phase = forced_phase % 4;
+        time_of_day.progress = 0.0;
         return;
     }
 
@@ -27,21 +21,5 @@ pub fn time_of_day_system(
     if time_of_day.progress >= 1.0 {
         time_of_day.phase = (time_of_day.phase + 1) % 4;
         time_of_day.progress = 0.0;
-    }
-
-    // Get crossfade parameters
-    let (current_phase, next_phase, blend) = time_of_day.crossfade_params();
-
-    // Apply crossfade to all time-variant sprites
-    for (tag, mut sprite) in &mut sprites {
-        let alpha = if tag.phase == current_phase {
-            1.0 - blend
-        } else if tag.phase == next_phase {
-            blend
-        } else {
-            0.0
-        };
-
-        sprite.color.set_alpha(alpha);
     }
 }

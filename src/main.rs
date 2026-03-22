@@ -7,12 +7,12 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Desktop Terrarium".to_string(),
-                resolution: WindowResolution::new(800.0, 600.0),
+                resolution: WindowResolution::new(1440.0, 900.0),
                 present_mode: PresentMode::AutoVsync,
                 resizable: true,
                 resize_constraints: WindowResizeConstraints {
-                    min_width: 400.0,
-                    min_height: 300.0,
+                    min_width: 960.0,
+                    min_height: 600.0,
                     ..default()
                 },
                 ..default()

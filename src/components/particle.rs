@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct RainDrop {
-    pub velocity: Vec2, // pixels per second, predominantly downward
-    pub lifetime: f32,  // seconds remaining
+    pub velocity: Vec3,
+    pub lifetime: f32, // seconds remaining
 }
 
 #[derive(Component)]
@@ -14,7 +14,7 @@ pub struct FogWisp {
 
 #[derive(Component)]
 pub struct WindLeaf {
-    pub velocity: Vec2,
+    pub velocity: Vec3,
     pub rotation_speed: f32, // radians per second
     pub lifetime: f32,
 }
