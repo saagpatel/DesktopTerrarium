@@ -1,16 +1,22 @@
 use crate::components::{HazeVolume, LightRigRole, WindReactive};
 use crate::resources::{SceneMoodPreset, SceneMoodState, TimeOfDay, WeatherState, WeatherType};
 use crate::systems::setup::SceneAssetHandles;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
+
+#[derive(SystemParam)]
+pub struct SceneMoodParams<'w, 's> {
+    assets: Res<'w, SceneAssetHandles>,
+    materials: ResMut<'w, Assets<StandardMaterial>>,
+    scene_mood: ResMut<'w, SceneMoodState>,
+    haze: Query<'w, 's, &'static mut Transform, With<HazeVolume>>,
+    point_lights: Query<'w, 's, (&'static LightRigRole, &'static mut PointLight)>,
+    directional_lights: Query<'w, 's, (&'static LightRigRole, &'static mut DirectionalLight)>,
+}
 
 pub fn scene_mood_system(
     mut ambient_light: ResMut<AmbientLight>,
-    assets: Res<SceneAssetHandles>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut scene_mood: ResMut<SceneMoodState>,
-    mut haze: Query<&mut Transform, With<HazeVolume>>,
-    mut point_lights: Query<(&LightRigRole, &mut PointLight)>,
-    mut directional_lights: Query<(&LightRigRole, &mut DirectionalLight)>,
+    mut scene: SceneMoodParams,
     time_of_day: Res<TimeOfDay>,
     weather: Res<WeatherState>,
 ) {
@@ -27,19 +33,19 @@ pub fn scene_mood_system(
 
     let preset =
         SceneMoodPreset::for_phase_and_weather(time_of_day.phase, wetness_boost, haze_boost);
-    scene_mood.current = preset;
+    scene.scene_mood.current = preset;
 
     ambient_light.color = preset.ambient_color;
     ambient_light.brightness = preset.ambient_brightness;
 
-    for (role, mut light) in &mut directional_lights {
+    for (role, mut light) in &mut scene.directional_lights {
         if *role == LightRigRole::Key {
             light.color = preset.key_color;
             light.illuminance = preset.key_illuminance;
         }
     }
 
-    for (role, mut light) in &mut point_lights {
+    for (role, mut light) in &mut scene.point_lights {
         match role {
             LightRigRole::Fill => {
                 light.color = preset.fill_color;
@@ -53,12 +59,12 @@ pub fn scene_mood_system(
         }
     }
 
-    if let Some(backdrop) = materials.get_mut(&assets.backdrop_material) {
+    if let Some(backdrop) = scene.materials.get_mut(&scene.assets.backdrop_material) {
         backdrop.base_color = preset.backdrop_color;
         backdrop.emissive = preset.backdrop_emissive;
     }
 
-    if let Some(glass) = materials.get_mut(&assets.glass_material) {
+    if let Some(glass) = scene.materials.get_mut(&scene.assets.glass_material) {
         glass.base_color = Color::srgba(
             0.84 + preset.wetness * 0.04,
             0.93 + preset.wetness * 0.03,
@@ -69,7 +75,7 @@ pub fn scene_mood_system(
         glass.perceptual_roughness = (0.08 - preset.wetness * 0.03).clamp(0.04, 0.12);
     }
 
-    if let Some(soil) = materials.get_mut(&assets.soil_material) {
+    if let Some(soil) = scene.materials.get_mut(&scene.assets.soil_material) {
         soil.base_color = Color::srgb(
             0.31 - preset.wetness * 0.08,
             0.2 - preset.wetness * 0.04,
@@ -78,7 +84,7 @@ pub fn scene_mood_system(
         soil.perceptual_roughness = (0.95 - preset.wetness * 0.25).clamp(0.55, 0.95);
     }
 
-    if let Some(moss) = materials.get_mut(&assets.moss_material) {
+    if let Some(moss) = scene.materials.get_mut(&scene.assets.moss_material) {
         moss.base_color = Color::srgb(
             0.22 - preset.wetness * 0.02,
             0.33 + preset.wetness * 0.06,
@@ -86,15 +92,18 @@ pub fn scene_mood_system(
         );
     }
 
-    if let Some(highlight) = materials.get_mut(&assets.glass_highlight_material) {
+    if let Some(highlight) = scene
+        .materials
+        .get_mut(&scene.assets.glass_highlight_material)
+    {
         highlight.base_color = Color::srgba(0.97, 0.99, 1.0, 0.14 + preset.wetness * 0.08);
     }
 
-    if let Some(fog) = materials.get_mut(&assets.fog_material) {
+    if let Some(fog) = scene.materials.get_mut(&scene.assets.fog_material) {
         fog.base_color = Color::srgba(0.86, 0.92, 0.96, preset.haze_alpha);
     }
 
-    for mut haze_transform in &mut haze {
+    for mut haze_transform in &mut scene.haze {
         haze_transform.scale = Vec3::new(
             6.4 + preset.haze_alpha * 2.0,
             3.0 + preset.haze_alpha * 4.0,

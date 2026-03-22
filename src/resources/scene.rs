@@ -1,14 +1,9 @@
 use bevy::prelude::*;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Resource)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Resource)]
 pub enum TerrariumScenePreset {
+    #[default]
     ConservatoryDesk,
-}
-
-impl Default for TerrariumScenePreset {
-    fn default() -> Self {
-        Self::ConservatoryDesk
-    }
 }
 
 impl TerrariumScenePreset {

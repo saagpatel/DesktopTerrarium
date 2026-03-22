@@ -27,6 +27,11 @@ fi
 
 mkdir -p "$CARGO_TARGET_DIR"
 
+# Override broken global cargo job settings so repo-local verification stays usable.
+if [[ -z "${CARGO_BUILD_JOBS:-}" ]] || [[ "${CARGO_BUILD_JOBS:-}" == "0" ]]; then
+  export CARGO_BUILD_JOBS=1
+fi
+
 if [[ "$#" -eq 0 ]]; then
   echo "CARGO_TARGET_DIR=$CARGO_TARGET_DIR"
   exit 0
