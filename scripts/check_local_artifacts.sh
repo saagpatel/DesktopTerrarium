@@ -4,16 +4,15 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-mapfile -t tracked_files < <(git ls-files)
 offenders=()
 
-for path in "${tracked_files[@]}"; do
+while IFS= read -r path; do
   case "$path" in
     *.DS_Store|target/*|.codex_audit/*)
       offenders+=("$path")
       ;;
   esac
-done
+done < <(git ls-files)
 
 if [ "${#offenders[@]}" -gt 0 ]; then
   echo "Local artifact guard failed."
