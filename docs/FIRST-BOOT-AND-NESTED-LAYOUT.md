@@ -156,11 +156,12 @@ desktop_terrarium/
 └── third_party/               vendored licenses + sources
 ```
 
-The default Bevy features enabled in `Cargo.toml`:
+The Bevy dependency in `Cargo.toml` uses a single non-default feature:
 
-- `stable-core` — core terrarium gameplay (always on)
-- `experimental-weather` — weather plugin (on by default; toggle with
-  `--no-default-features --features stable-core`)
+- `wayland` — enables the Wayland display backend on Linux; Bevy auto-selects
+  the native backend on macOS regardless, so this is a no-op there.
+
+There are no custom `[features]` defined in this crate.
 
 ---
 
@@ -203,7 +204,7 @@ When picking this up after time away:
 
 | Field | Value |
 |---|---|
-| Last commit on `master` | `b2fc2ca` chore(ci): guard local artifacts and trim placeholders |
+| Last commit on `master` | `4def9cb` docs: nested-repo layout and first-boot validation walkthrough (#2) |
 | Bevy version | 0.15 |
 | Edition | 2021 |
 | MSRV (tested) | Rust 1.70+ |
