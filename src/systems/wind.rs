@@ -1,7 +1,7 @@
 use crate::components::WindLeaf;
 use crate::resources::{WeatherState, WeatherType};
 use bevy::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 
 #[derive(Resource)]
 pub struct WindAssets {
@@ -30,10 +30,10 @@ pub fn wind_spawn_system(
     wind_assets.spawn_timer.tick(time.delta());
 
     if wind_assets.spawn_timer.just_finished() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         // Random spawn chance (3-8 per second)
-        if rng.gen::<f32>() < 0.5 {
+        if rng.random::<f32>() < 0.5 {
             commands.spawn((
                 Sprite {
                     image: wind_assets.leaf_handle.clone(),
@@ -41,12 +41,15 @@ pub fn wind_spawn_system(
                 },
                 Transform::from_xyz(
                     450.0, // Start from right edge
-                    rng.gen_range(-200.0..200.0),
+                    rng.random_range(-200.0..200.0),
                     50.0,
                 ),
                 WindLeaf {
-                    velocity: Vec2::new(rng.gen_range(-200.0..-100.0), rng.gen_range(-20.0..20.0)),
-                    rotation_speed: rng.gen_range(-3.0..3.0),
+                    velocity: Vec2::new(
+                        rng.random_range(-200.0..-100.0),
+                        rng.random_range(-20.0..20.0),
+                    ),
+                    rotation_speed: rng.random_range(-3.0..3.0),
                     lifetime: 8.0,
                 },
             ));

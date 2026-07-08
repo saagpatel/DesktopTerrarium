@@ -2,7 +2,7 @@ use crate::components::RainDrop;
 use crate::resources::WeatherState;
 use crate::resources::WeatherType;
 use bevy::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 
 const RAIN_SPAWN_RATE: f32 = 15.0; // drops per second
 
@@ -48,18 +48,21 @@ pub fn rain_spawn_system(
     rain_assets.spawn_timer.tick(time.delta());
 
     if rain_assets.spawn_timer.just_finished() {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         // Spawn rain drops based on multiplier
-        if rng.gen::<f32>() < spawn_multiplier {
+        if rng.random::<f32>() < spawn_multiplier {
             commands.spawn((
                 Sprite {
                     image: rain_assets.raindrop_handle.clone(),
                     ..default()
                 },
-                Transform::from_xyz(rng.gen_range(-420.0..420.0), 320.0, 50.0),
+                Transform::from_xyz(rng.random_range(-420.0..420.0), 320.0, 50.0),
                 RainDrop {
-                    velocity: Vec2::new(rng.gen_range(-10.0..10.0), rng.gen_range(-300.0..-200.0)),
+                    velocity: Vec2::new(
+                        rng.random_range(-10.0..10.0),
+                        rng.random_range(-300.0..-200.0),
+                    ),
                     lifetime: 3.0,
                 },
             ));
