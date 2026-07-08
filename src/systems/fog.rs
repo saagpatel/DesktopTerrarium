@@ -1,7 +1,7 @@
 use crate::components::FogWisp;
 use crate::resources::{WeatherState, WeatherType};
 use bevy::prelude::*;
-use rand::Rng;
+use rand::RngExt;
 
 #[derive(Resource)]
 pub struct FogAssets {
@@ -34,20 +34,20 @@ pub fn fog_spawn_system(
 
     // Spawn wisps if we need more
     if current_count < target_count {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         commands.spawn((
             Sprite {
                 image: fog_assets.fog_wisp_handle.clone(),
                 ..default()
             },
             Transform::from_xyz(
-                rng.gen_range(-450.0..450.0),
-                rng.gen_range(-250.0..250.0),
+                rng.random_range(-450.0..450.0),
+                rng.random_range(-250.0..250.0),
                 50.0,
             ),
             FogWisp {
-                drift_speed: rng.gen_range(10.0..30.0),
-                alpha_phase: rng.gen_range(0.0..std::f32::consts::TAU),
+                drift_speed: rng.random_range(10.0..30.0),
+                alpha_phase: rng.random_range(0.0..std::f32::consts::TAU),
             },
         ));
     }

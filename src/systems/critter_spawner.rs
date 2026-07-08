@@ -2,7 +2,7 @@ use crate::components::{Critter, CritterSpecies};
 use crate::events::CritterArrived;
 use crate::resources::BehaviorSignals;
 use bevy::prelude::*;
-use rand::Rng;
+use rand::{Rng, RngExt};
 
 pub fn critter_spawner_system(
     mut commands: Commands,
@@ -21,7 +21,7 @@ pub fn critter_spawner_system(
             .iter()
             .any(|c| c.species == CritterSpecies::Butterfly);
         if !has_butterfly && *spawn_timer > 5.0 {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let path = random_butterfly_path(&mut rng);
 
             commands.spawn((
@@ -47,8 +47,8 @@ pub fn critter_spawner_system(
 
     // Beetle: 5% chance per minute when active
     if behavior.is_active && *spawn_timer > 60.0 {
-        let mut rng = rand::thread_rng();
-        if rng.gen::<f32>() < 0.05 {
+        let mut rng = rand::rng();
+        if rng.random::<f32>() < 0.05 {
             let has_beetle = existing_critters
                 .iter()
                 .any(|c| c.species == CritterSpecies::Beetle);
@@ -79,11 +79,11 @@ pub fn critter_spawner_system(
 }
 
 fn random_butterfly_path(rng: &mut impl Rng) -> [Vec2; 4] {
-    let enter_side = if rng.gen_bool(0.5) { -1.0 } else { 1.0 };
+    let enter_side = if rng.random_bool(0.5) { -1.0 } else { 1.0 };
     [
-        Vec2::new(enter_side * 500.0, rng.gen_range(-100.0..200.0)),
-        Vec2::new(enter_side * 200.0, rng.gen_range(0.0..250.0)),
-        Vec2::new(-enter_side * 150.0, rng.gen_range(-50.0..200.0)),
-        Vec2::new(-enter_side * 500.0, rng.gen_range(-100.0..200.0)),
+        Vec2::new(enter_side * 500.0, rng.random_range(-100.0..200.0)),
+        Vec2::new(enter_side * 200.0, rng.random_range(0.0..250.0)),
+        Vec2::new(-enter_side * 150.0, rng.random_range(-50.0..200.0)),
+        Vec2::new(-enter_side * 500.0, rng.random_range(-100.0..200.0)),
     ]
 }
