@@ -9,7 +9,7 @@ pub fn parallax_system(
     mut layers: Query<(&SceneLayer, &mut Transform)>,
     time: Res<Time>,
 ) {
-    let window = match windows.get_single() {
+    let window = match windows.single() {
         Ok(w) => w,
         Err(_) => return,
     };

@@ -8,7 +8,7 @@ const GROWTH_RATE_PER_SEC: f32 = 0.001; // ~17 minutes per stage
 pub fn plant_growth_system(
     mut plants: Query<(Entity, &mut Plant)>,
     behavior: Res<BehaviorSignals>,
-    mut events: EventWriter<PlantStageChanged>,
+    mut events: MessageWriter<PlantStageChanged>,
     time: Res<Time>,
 ) {
     let growth_delta = if behavior.is_active {
@@ -32,7 +32,7 @@ pub fn plant_growth_system(
             plant.stage += 1;
             plant.growth_progress = 0.0;
 
-            events.send(PlantStageChanged {
+            events.write(PlantStageChanged {
                 entity,
                 species: plant.species,
                 old_stage,
@@ -43,7 +43,7 @@ pub fn plant_growth_system(
 }
 
 pub fn handle_plant_stage_changes(
-    mut events: EventReader<PlantStageChanged>,
+    mut events: MessageReader<PlantStageChanged>,
     mut plants: Query<(&Plant, &mut Sprite)>,
     asset_server: Res<AssetServer>,
 ) {

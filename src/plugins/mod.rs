@@ -11,10 +11,10 @@ impl Plugin for TerrariumPlugin {
             .init_resource::<WeatherState>()
             .init_resource::<BehaviorSignals>()
             .init_resource::<DebugSettings>()
-            .add_event::<PlantStageChanged>()
-            .add_event::<CritterArrived>()
-            .add_event::<CritterDeparted>()
-            .add_event::<WeatherChanged>()
+            .add_message::<PlantStageChanged>()
+            .add_message::<CritterArrived>()
+            .add_message::<CritterDeparted>()
+            .add_message::<WeatherChanged>()
             .add_systems(
                 Startup,
                 (
