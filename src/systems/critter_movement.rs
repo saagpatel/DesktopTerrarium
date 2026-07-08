@@ -6,7 +6,7 @@ pub fn critter_movement_system(
     mut commands: Commands,
     mut critters: Query<(Entity, &mut Critter, &mut Transform)>,
     time: Res<Time>,
-    mut events: EventWriter<CritterDeparted>,
+    mut events: MessageWriter<CritterDeparted>,
 ) {
     for (entity, mut critter, mut transform) in &mut critters {
         // Advance along path
@@ -14,7 +14,7 @@ pub fn critter_movement_system(
 
         if critter.path_progress >= 1.0 {
             // Path complete - despawn
-            events.send(CritterDeparted {
+            events.write(CritterDeparted {
                 species: critter.species,
             });
             commands.entity(entity).despawn();

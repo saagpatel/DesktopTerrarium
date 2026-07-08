@@ -6,7 +6,7 @@ pub fn weather_transition_system(
     mut weather: ResMut<WeatherState>,
     debug: Res<DebugSettings>,
     time: Res<Time>,
-    mut events: EventWriter<WeatherChanged>,
+    mut events: MessageWriter<WeatherChanged>,
 ) {
     // Handle debug overrides
     if let Some(forced_weather) = debug.force_weather {
@@ -34,7 +34,7 @@ pub fn weather_transition_system(
         if weather.phase_elapsed >= weather.phase_duration_secs {
             // Start transition to next weather
             let new_target = weather.current.next();
-            events.send(WeatherChanged {
+            events.write(WeatherChanged {
                 from: weather.current,
                 to: new_target,
             });

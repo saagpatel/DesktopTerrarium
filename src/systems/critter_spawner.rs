@@ -11,7 +11,7 @@ pub fn critter_spawner_system(
     time: Res<Time>,
     mut spawn_timer: Local<f32>,
     asset_server: Res<AssetServer>,
-    mut events: EventWriter<CritterArrived>,
+    mut events: MessageWriter<CritterArrived>,
 ) {
     *spawn_timer += time.delta_secs();
 
@@ -38,7 +38,7 @@ pub fn critter_spawner_system(
                 },
             ));
 
-            events.send(CritterArrived {
+            events.write(CritterArrived {
                 species: CritterSpecies::Butterfly,
             });
             *spawn_timer = 0.0;
@@ -69,7 +69,7 @@ pub fn critter_spawner_system(
                     },
                 ));
 
-                events.send(CritterArrived {
+                events.write(CritterArrived {
                     species: CritterSpecies::Beetle,
                 });
             }
