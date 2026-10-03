@@ -62,8 +62,7 @@ cargo audit
 ```
 
 `cargo audit` requires the separately installed `cargo-audit` tool and may update
-its advisory database. See [CI](.github/workflows/ci.yml) for the maintained
-installation and platform setup. The current tests exercise counter logic and
+its advisory database; install it with `cargo install cargo-audit`. The current tests exercise counter logic and
 persistence in disposable temporary directories; they do not launch the GUI or
 load the app's personal state. Build outputs go into `target/` by default.
 
