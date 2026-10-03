@@ -50,7 +50,7 @@ keyboard activity:
 cargo test --locked --lib systems::behavior_tracker::tests
 ```
 
-For broader local verification, matching the macOS CI lanes:
+For broader local verification on macOS:
 
 ```bash
 ./scripts/check_local_artifacts.sh
@@ -66,9 +66,8 @@ its advisory database; install it with `cargo install cargo-audit`. The current 
 persistence in disposable temporary directories; they do not launch the GUI or
 load the app's personal state. Build outputs go into `target/` by default.
 
-macOS is the supported idle-detection platform. The Linux CI lane only checks
-compilation with the native libraries listed in that workflow; non-macOS builds
-use an always-active fallback, so compilation does not prove activity tracking.
+macOS is the supported idle-detection platform. Non-macOS builds use an
+always-active fallback, so compiling elsewhere does not prove activity tracking.
 
 For changes to rendering, interaction, activity detection or app persistence,
 also check the native app on macOS with `cargo run --locked`: confirm the scene,
