@@ -14,7 +14,7 @@ The repo is active local desktop/game work. Existing untracked folders are gener
 | Layer | Technology |
 |-------|------------|
 | Language | Rust 2021 |
-| Engine | Bevy 0.15 |
+| Engine | Bevy 0.19 |
 | Serialization | serde + serde_json |
 | Persistence | JSON via `dirs` (platform data dir) |
 | Idle detection | macOS CoreGraphics — CGEventSourceSecondsSinceLastEventType |
@@ -28,6 +28,11 @@ cargo run
 # Release build
 cargo build --release
 ```
+
+## Verification
+
+Follow the authoritative [README verification instructions](README.md#verification).
+Use the focused fixture test before any interactive app check.
 
 ## Known Risks
 

@@ -36,12 +36,56 @@ cargo run
 cargo build --release
 ```
 
+## Verification
+
+Run these commands from the repository root (the directory containing
+`Cargo.toml` and the committed `Cargo.lock`). Use Rust stable with the `rustfmt`
+and `clippy` components installed. Cargo may download dependencies on the first
+run; `--locked` keeps the committed dependency resolution.
+
+For a focused activity-counter check that does not start the app or poll real
+keyboard activity:
+
+```bash
+cargo test --locked --lib systems::behavior_tracker::tests
+```
+
+For broader local verification, matching the macOS CI lanes:
+
+```bash
+./scripts/check_local_artifacts.sh
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets --no-deps
+cargo test --locked
+cargo build --locked
+cargo audit
+```
+
+`cargo audit` requires the separately installed `cargo-audit` tool and may update
+its advisory database. See [CI](.github/workflows/ci.yml) for the maintained
+installation and platform setup. The current tests exercise counter logic and
+persistence in disposable temporary directories; they do not launch the GUI or
+load the app's personal state. Build outputs go into `target/` by default.
+
+macOS is the supported idle-detection platform. The Linux CI lane only checks
+compilation with the native libraries listed in that workflow; non-macOS builds
+use an always-active fallback, so compilation does not prove activity tracking.
+
+For changes to rendering, interaction, activity detection or app persistence,
+also check the native app on macOS with `cargo run --locked`: confirm the scene,
+resize behavior and the affected interaction. This launches a real window,
+reads system idle time and loads/saves state in the platform data directory under
+`com.desktopterrarium.app`. Use a separate disposable OS account for an isolated
+manual check; do not delete or reset existing personal state. No browser check
+applies to this native app, and a documentation-only change does not require
+launching it.
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Language | Rust 2021 |
-| Engine | Bevy 0.15 |
+| Engine | Bevy 0.19 |
 | Serialization | serde + serde_json |
 | Persistence | JSON via `dirs` (platform data dir) |
 | Idle detection | macOS CoreGraphics — CGEventSourceSecondsSinceLastEventType |
