@@ -4,7 +4,7 @@
 
 > Stay focused long enough and a butterfly appears. Your terrarium knows if you've been slacking.
 
-Desktop Terrarium is a native desktop app (800×600, resizable) that renders a layered 2D terrarium scene using the Bevy game engine. The scene evolves based on your real keyboard activity and an internal clock — plants grow through life stages, weather transitions between four states with particle effects, and critters visit when you stay focused.
+Desktop Terrarium is a native desktop app (800×600, resizable) that renders a layered 2D terrarium scene using the Bevy game engine. The scene evolves based on your real keyboard and mouse activity and an internal clock — plants grow through life stages, weather transitions between four states with particle effects, and critters visit when you stay focused.
 
 ## Features
 
@@ -44,7 +44,7 @@ and `clippy` components installed. Cargo may download dependencies on the first
 run; `--locked` keeps the committed dependency resolution.
 
 For a focused activity-counter check that does not start the app or poll real
-keyboard activity:
+keyboard or mouse activity:
 
 ```bash
 cargo test --locked --lib systems::behavior_tracker::tests
