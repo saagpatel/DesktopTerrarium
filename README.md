@@ -13,7 +13,7 @@ Desktop Terrarium is a native desktop app (800×600, resizable) that renders a l
 - **Critter visits** — butterfly appears after 30 consecutive focus minutes; beetle visits randomly during active time
 - **Time-of-day cycle** — morning, day, evening, night phases crossfade layered sprites
 - **Parallax layers** — scene layers move at different depths as the window is interacted with
-- **Persistent state** — plant growth, weather, and activity stats saved every 5 minutes to the system data directory
+- **Persistent state** — plant growth, weather, and activity stats saved every 5 minutes and on clean exit to the system data directory
 
 ## Quick Start
 
@@ -30,18 +30,47 @@ cd DesktopTerrarium
 ### Usage
 ```bash
 # Run
-cargo run
+cargo run --locked
 
 # Release build
-cargo build --release
+cargo build --locked --release
 ```
+
+## Status
+
+### Stack
+
+| Layer | Technology |
+|-------|------------|
+| Language | Rust 2021 |
+| Engine | Bevy 0.19 |
+| Serialization | serde + serde_json |
+| Persistence | JSON via `dirs` (platform data dir) |
+| Idle detection | macOS CoreGraphics — CGEventSourceSecondsSinceLastEventType |
+
+### Known risks
+
+- Idle detection depends on macOS CoreGraphics. Other targets use an always-active fallback.
+- Terrarium state persists to the platform data directory; do not reset personal state for a manual check.
+- `.artifacts/` and `.perf-results/` contain tracked generated outputs and should not be swept into unrelated source commits.
+- Plant art is currently placeholder art: all 15 plant stage images share identical image data.
+
+### Next steps
+
+- Replace the identical placeholder plant artwork with distinct species and stage art.
 
 ## Verification
 
 Run these commands from the repository root (the directory containing
-`Cargo.toml` and the committed `Cargo.lock`). Use Rust stable with the `rustfmt`
-and `clippy` components installed. Cargo may download dependencies on the first
-run; `--locked` keeps the committed dependency resolution.
+`Cargo.toml` and the committed `Cargo.lock`). Use the pinned Rust toolchain in
+`rust-toolchain.toml`. Cargo may download dependencies on the first run;
+`--locked` keeps the committed dependency resolution.
+
+For the complete local check, run:
+
+```bash
+make check
+```
 
 For a focused activity-counter check that does not start the app or poll real
 keyboard or mouse activity:
@@ -50,20 +79,19 @@ keyboard or mouse activity:
 cargo test --locked --lib systems::behavior_tracker::tests
 ```
 
-For broader local verification on macOS:
+For the individual checks on macOS:
 
 ```bash
 ./scripts/check_local_artifacts.sh
 cargo fmt --all -- --check
-cargo clippy --locked --all-targets --no-deps
+cargo clippy --locked --all-targets --no-deps -- -D warnings
 cargo test --locked
 cargo build --locked
-cargo audit
 ```
 
-`cargo audit` requires the separately installed `cargo-audit` tool and may update
-its advisory database; install it with `cargo install cargo-audit`. The current tests exercise counter logic and
-persistence in disposable temporary directories; they do not launch the GUI or
+Run `make audit` separately when `cargo-audit` is installed; it may update the
+RustSec advisory database. The current tests exercise counter logic and
+persistence in repository-local disposable test directories; they do not launch the GUI or
 load the app's personal state. Build outputs go into `target/` by default.
 
 macOS is the supported idle-detection platform. Non-macOS builds use an
@@ -77,16 +105,6 @@ reads system idle time and loads/saves state in the platform data directory unde
 manual check; do not delete or reset existing personal state. No browser check
 applies to this native app, and a documentation-only change does not require
 launching it.
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Language | Rust 2021 |
-| Engine | Bevy 0.19 |
-| Serialization | serde + serde_json |
-| Persistence | JSON via `dirs` (platform data dir) |
-| Idle detection | macOS CoreGraphics — CGEventSourceSecondsSinceLastEventType |
 
 ## License
 
