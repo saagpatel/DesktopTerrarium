@@ -1,9 +1,7 @@
 [advisories]
-# quick-xml is pulled transitively through bevy 0.15 -> winit 0.30 ->
-# smithay-client-toolkit -> wayland-scanner. The latest compatible
-# wayland-scanner line only reaches quick-xml 0.39.4, while these advisories
-# require quick-xml >=0.41.0. Keep this narrow until the Bevy/winit migration
-# in Dependabot #14 can move the Wayland stack past the constraint.
+# quick-xml 0.39.4 is pulled by the Bevy 0.19 -> winit 0.30 -> Wayland
+# dependency graph. The advisories are fixed in quick-xml 0.41.0, which is not
+# accepted by the current wayland-scanner 0.31.10 dependency range.
 ignore = [
   "RUSTSEC-2026-0194",
   "RUSTSEC-2026-0195",

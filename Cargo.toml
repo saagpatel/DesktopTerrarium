@@ -2,6 +2,7 @@
 name = "desktop_terrarium"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.99.0"
 
 [dependencies]
 bevy = { version = "0.19", features = ["wayland"] }
@@ -17,7 +18,3 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
-
-[patch.crates-io]
-metal = { path = "third_party/metal" }
-accesskit_windows = { path = "third_party/accesskit_windows" }
