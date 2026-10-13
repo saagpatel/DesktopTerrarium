@@ -1,48 +1,32 @@
-<!-- portfolio-context:start -->
-# Portfolio Context
+# Purpose
 
-## What This Project Is
+Desktop Terrarium is a native Bevy 0.19 app that grows a layered terrarium from keyboard and mouse activity and elapsed time. State is stored locally as JSON.
 
-Desktop Terrarium is a native Bevy desktop app that grows a layered 2D terrarium based on real keyboard and mouse activity and time. Plants advance through growth stages, weather cycles through particle-rich states, butterflies appear after focus streaks, beetles visit randomly during active time, and state persists locally.
+# Layout
 
-## Current State
+- `src/components`, `src/resources`, `src/events`, and `src/systems` contain Bevy application code.
+- `assets/` contains runtime sprites and particles.
+- `scripts/check_local_artifacts.sh` guards tracked local build artifacts.
+- `Cargo.toml` and `Cargo.lock` define the Rust package and locked dependency graph.
 
-The repo is active local desktop/game work. Generated outputs `.artifacts/readiness-summary.md` and `.perf-results/native.json` are already tracked.
+# Setup
 
-## Stack
+Install the pinned Rust toolchain with `rustup` by running `rustup toolchain install 1.99.0 --component clippy --component rustfmt`. Then run the app with `cargo run --locked`.
 
-| Layer | Technology |
-|-------|------------|
-| Language | Rust 2021 |
-| Engine | Bevy 0.19 |
-| Serialization | serde + serde_json |
-| Persistence | JSON via `dirs` (platform data dir) |
-| Idle detection | macOS CoreGraphics — CGEventSourceSecondsSinceLastEventType |
+# Checks
 
-## How To Run
+- `make check` runs the non-mutating local artifact, formatting, lint, test, and build checks.
+- `make audit` runs `cargo audit`; it requires `cargo-audit` and an available RustSec advisory database.
+- Focused activity tests: `cargo test --locked --lib systems::behavior_tracker::tests`.
 
-```bash
-# Run
-cargo run
+# Boundaries
 
-# Release build
-cargo build --release
-```
+- Idle detection uses macOS CoreGraphics. Other targets use an always-active fallback and do not establish macOS activity behavior.
+- Persistence writes to the platform data directory. Never delete or reset user save data as part of routine development.
+- Preserve the tracked generated outputs `.artifacts/` and `.perf-results/`. Do not sweep additional local outputs into source changes.
+- Keep Bevy performance and the 800x600 resizable window behavior intact when changing rendering.
+- GUI launch, screenshots, publishing, and release work are outside routine source checks.
 
-## Verification
+# Delivery
 
-Follow the authoritative [README verification instructions](README.md#verification).
-Use the focused activity-counter unit tests before any interactive app check.
-
-## Known Risks
-
-- Idle detection depends on macOS CoreGraphics, so cross-platform claims need explicit verification.
-- Terrarium state persists to the platform data directory; avoid destructive state resets without operator approval.
-- Generated `.artifacts` and `.perf-results` folders contain tracked outputs; additional local outputs should not be swept into source commits.
-- Keep Bevy performance and 800x600/resizable window behavior intact when changing rendering.
-
-## Next Recommended Move
-
-Keep future work focused on activity-driven growth, local persistence, and Bevy rendering stability.
-
-<!-- portfolio-context:end -->
+Keep changes focused on activity-driven growth, local persistence, and Bevy rendering stability. Commit using a conventional commit header and do not include real local paths, personal names, email addresses, or AI co-author trailers.

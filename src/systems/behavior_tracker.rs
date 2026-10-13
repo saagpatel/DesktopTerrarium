@@ -1,5 +1,5 @@
 use crate::errors::TerrariumError;
-use crate::resources::BehaviorSignals;
+use crate::resources::{ActivityStatus, BehaviorSignals};
 use bevy::prelude::*;
 
 const ACTIVE_IDLE_THRESHOLD_SECS: f64 = 120.0;
@@ -26,6 +26,10 @@ fn get_system_idle_secs() -> Result<f64, TerrariumError> {
         Err(TerrariumError::IdleTimeQueryFailed(
             "negative value returned".into(),
         ))
+    } else if !secs.is_finite() {
+        Err(TerrariumError::IdleTimeQueryFailed(
+            "non-finite value returned".into(),
+        ))
     } else {
         Ok(secs)
     }
@@ -42,7 +46,7 @@ fn update_behavior_counters(behavior: &mut BehaviorSignals, elapsed_secs: f64) {
         return;
     }
 
-    if behavior.is_active {
+    if behavior.activity == ActivityStatus::Active {
         behavior.total_active_secs += elapsed_secs;
         behavior.current_focus_streak_secs += elapsed_secs;
         behavior.longest_focus_streak_secs = behavior
@@ -53,23 +57,49 @@ fn update_behavior_counters(behavior: &mut BehaviorSignals, elapsed_secs: f64) {
     }
 }
 
-pub fn behavior_tracker_system(mut behavior: ResMut<BehaviorSignals>, time: Res<Time>) {
+fn apply_idle_outcome(behavior: &mut BehaviorSignals, outcome: Result<f64, TerrariumError>) {
+    match outcome {
+        Ok(idle_secs) if idle_secs.is_finite() && idle_secs >= 0.0 => {
+            behavior.system_idle_secs = idle_secs;
+            behavior.activity = if idle_secs < ACTIVE_IDLE_THRESHOLD_SECS {
+                ActivityStatus::Active
+            } else {
+                ActivityStatus::Idle
+            };
+        }
+        _ => behavior.activity = ActivityStatus::Unavailable,
+    }
+}
+
+fn update_behavior_from_idle_outcome(
+    behavior: &mut BehaviorSignals,
+    outcome: Result<f64, TerrariumError>,
+    elapsed_secs: f64,
+) {
+    apply_idle_outcome(behavior, outcome);
+    if behavior.activity != ActivityStatus::Unavailable {
+        update_behavior_counters(behavior, elapsed_secs);
+    }
+}
+
+pub fn behavior_tracker_system(
+    mut behavior: ResMut<BehaviorSignals>,
+    time: Res<Time>,
+    mut previous_status: Local<Option<ActivityStatus>>,
+) {
     let elapsed_secs = time.delta_secs_f64();
 
-    // Poll system idle time
-    match get_system_idle_secs() {
-        Ok(idle_secs) => {
-            behavior.system_idle_secs = idle_secs;
+    update_behavior_from_idle_outcome(&mut behavior, get_system_idle_secs(), elapsed_secs);
+    if previous_status.is_none_or(|status| status != behavior.activity) {
+        match behavior.activity {
+            ActivityStatus::Unavailable => {
+                warn!("System idle time is unavailable; pausing activity growth")
+            }
+            ActivityStatus::Idle => info!("System activity state changed to idle"),
+            ActivityStatus::Active => info!("System activity state changed to active"),
         }
-        Err(e) => {
-            warn!("Failed to get system idle time: {}", e);
-            behavior.system_idle_secs = 0.0; // Assume active on error
-        }
+        *previous_status = Some(behavior.activity);
     }
-
-    // Determine if user is active (idle < 120 seconds)
-    behavior.is_active = behavior.system_idle_secs < ACTIVE_IDLE_THRESHOLD_SECS;
-    update_behavior_counters(&mut behavior, elapsed_secs);
 }
 
 #[cfg(test)]
@@ -83,7 +113,7 @@ mod tests {
     #[test]
     fn active_time_accumulates_by_elapsed_seconds() {
         let mut behavior = BehaviorSignals {
-            is_active: true,
+            activity: ActivityStatus::Active,
             ..Default::default()
         };
 
@@ -98,12 +128,12 @@ mod tests {
     #[test]
     fn inactive_transition_resets_current_streak_only() {
         let mut behavior = BehaviorSignals {
-            is_active: true,
+            activity: ActivityStatus::Active,
             ..Default::default()
         };
         update_behavior_counters(&mut behavior, 10.0);
 
-        behavior.is_active = false;
+        behavior.activity = ActivityStatus::Idle;
         update_behavior_counters(&mut behavior, 0.2);
 
         approx_eq(behavior.total_active_secs, 10.0);
@@ -114,7 +144,7 @@ mod tests {
     #[test]
     fn non_positive_elapsed_time_does_not_change_counters() {
         let mut behavior = BehaviorSignals {
-            is_active: true,
+            activity: ActivityStatus::Active,
             ..Default::default()
         };
 
@@ -124,5 +154,25 @@ mod tests {
         approx_eq(behavior.total_active_secs, 0.0);
         approx_eq(behavior.current_focus_streak_secs, 0.0);
         approx_eq(behavior.longest_focus_streak_secs, 0.0);
+    }
+
+    #[test]
+    fn unavailable_and_invalid_idle_values_award_no_focus_time() {
+        for outcome in [
+            Err(TerrariumError::IdleTimeQueryFailed("injected".into())),
+            Ok(f64::NAN),
+            Ok(f64::INFINITY),
+            Ok(-1.0),
+        ] {
+            let mut behavior = BehaviorSignals {
+                activity: ActivityStatus::Active,
+                current_focus_streak_secs: 12.0,
+                ..Default::default()
+            };
+            update_behavior_from_idle_outcome(&mut behavior, outcome, 1.0);
+            assert_eq!(behavior.activity, ActivityStatus::Unavailable);
+            approx_eq(behavior.total_active_secs, 0.0);
+            approx_eq(behavior.current_focus_streak_secs, 12.0);
+        }
     }
 }

@@ -1,6 +1,6 @@
 use crate::components::Plant;
 use crate::events::PlantStageChanged;
-use crate::resources::BehaviorSignals;
+use crate::resources::{ActivityStatus, BehaviorSignals};
 use bevy::prelude::*;
 
 const GROWTH_RATE_PER_SEC: f32 = 0.001; // ~17 minutes per stage
@@ -11,7 +11,7 @@ pub fn plant_growth_system(
     mut events: MessageWriter<PlantStageChanged>,
     time: Res<Time>,
 ) {
-    let growth_delta = if behavior.is_active {
+    let growth_delta = if behavior.activity == ActivityStatus::Active {
         GROWTH_RATE_PER_SEC * time.delta_secs()
     } else {
         0.0

@@ -1,23 +1,14 @@
 use crate::events::WeatherChanged;
-use crate::resources::{DebugSettings, WeatherState};
+use crate::resources::WeatherState;
 use bevy::prelude::*;
 
 pub fn weather_transition_system(
     mut weather: ResMut<WeatherState>,
-    debug: Res<DebugSettings>,
     time: Res<Time>,
     mut events: MessageWriter<WeatherChanged>,
 ) {
-    // Handle debug overrides
-    if let Some(forced_weather) = debug.force_weather {
-        weather.current = forced_weather;
-        weather.target = forced_weather;
-        weather.transition_progress = 1.0;
-        return;
-    }
-
     // Advance time in current phase
-    weather.phase_elapsed += time.delta_secs() * debug.time_scale;
+    weather.phase_elapsed += time.delta_secs();
 
     // Check if we're currently transitioning
     if weather.transition_progress < 1.0 {

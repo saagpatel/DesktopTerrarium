@@ -1,5 +1,5 @@
 use crate::components::WindLeaf;
-use crate::resources::{WeatherState, WeatherType};
+use crate::resources::{weather_transition_factor, WeatherState, WeatherType};
 use bevy::prelude::*;
 use rand::RngExt;
 
@@ -31,9 +31,15 @@ pub fn wind_spawn_system(
 
     if wind_assets.spawn_timer.just_finished() {
         let mut rng = rand::rng();
+        let spawn_multiplier = weather_transition_factor(
+            weather.current,
+            weather.target,
+            weather.transition_progress,
+            WeatherType::Wind,
+        );
 
         // Random spawn chance (3-8 per second)
-        if rng.random::<f32>() < 0.5 {
+        if rng.random::<f32>() < 0.5 * spawn_multiplier {
             commands.spawn((
                 Sprite {
                     image: wind_assets.leaf_handle.clone(),
@@ -77,5 +83,50 @@ pub fn wind_update_system(
         if leaf.lifetime <= 0.0 || transform.translation.x < -450.0 {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wind_emission_respects_transition_boundaries() {
+        assert_eq!(
+            weather_transition_factor(
+                WeatherType::Clear,
+                WeatherType::Wind,
+                0.0,
+                WeatherType::Wind
+            ),
+            0.0
+        );
+        assert_eq!(
+            weather_transition_factor(
+                WeatherType::Clear,
+                WeatherType::Wind,
+                1.0,
+                WeatherType::Wind
+            ),
+            1.0
+        );
+        assert_eq!(
+            weather_transition_factor(
+                WeatherType::Wind,
+                WeatherType::Clear,
+                0.0,
+                WeatherType::Wind
+            ),
+            1.0
+        );
+        assert_eq!(
+            weather_transition_factor(
+                WeatherType::Wind,
+                WeatherType::Clear,
+                1.0,
+                WeatherType::Wind
+            ),
+            0.0
+        );
     }
 }

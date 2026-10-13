@@ -1,5 +1,5 @@
 use crate::components::FogWisp;
-use crate::resources::{WeatherState, WeatherType};
+use crate::resources::{weather_transition_factor, WeatherState, WeatherType};
 use bevy::prelude::*;
 use rand::RngExt;
 
@@ -26,11 +26,14 @@ pub fn fog_spawn_system(
     }
 
     let current_count = existing_fog.iter().count();
-    let target_count = if weather.current == WeatherType::Fog {
-        8
-    } else {
-        0
-    };
+    let target_count = (8.0
+        * weather_transition_factor(
+            weather.current,
+            weather.target,
+            weather.transition_progress,
+            WeatherType::Fog,
+        ))
+    .ceil() as usize;
 
     // Spawn wisps if we need more
     if current_count < target_count {
@@ -82,16 +85,38 @@ pub fn fog_update_system(
         let base_alpha = 0.15 + 0.1 * wisp.alpha_phase.sin();
 
         // Adjust for weather transition
-        let transition_alpha = if weather.current == WeatherType::Fog {
-            if weather.target == WeatherType::Fog {
-                1.0
-            } else {
-                1.0 - weather.transition_progress
-            }
-        } else {
-            weather.transition_progress
-        };
+        let transition_alpha = weather_transition_factor(
+            weather.current,
+            weather.target,
+            weather.transition_progress,
+            WeatherType::Fog,
+        );
 
         sprite.color.set_alpha(base_alpha * transition_alpha);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fog_emission_respects_transition_boundaries() {
+        assert_eq!(
+            weather_transition_factor(WeatherType::Clear, WeatherType::Fog, 0.0, WeatherType::Fog),
+            0.0
+        );
+        assert_eq!(
+            weather_transition_factor(WeatherType::Clear, WeatherType::Fog, 1.0, WeatherType::Fog),
+            1.0
+        );
+        assert_eq!(
+            weather_transition_factor(WeatherType::Fog, WeatherType::Clear, 0.0, WeatherType::Fog),
+            1.0
+        );
+        assert_eq!(
+            weather_transition_factor(WeatherType::Fog, WeatherType::Clear, 1.0, WeatherType::Fog),
+            0.0
+        );
     }
 }
