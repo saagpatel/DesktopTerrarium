@@ -11,6 +11,14 @@ pub struct BehaviorSignals {
     pub current_focus_streak_secs: f64,
     /// Longest focus streak ever recorded. Persisted.
     pub longest_focus_streak_secs: f64,
-    /// Whether the user is currently "active" (idle < 120 seconds).
-    pub is_active: bool,
+    /// User activity state, including idle-query failures.
+    pub activity: ActivityStatus,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ActivityStatus {
+    Active,
+    Idle,
+    #[default]
+    Unavailable,
 }
