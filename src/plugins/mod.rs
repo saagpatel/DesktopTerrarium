@@ -10,7 +10,6 @@ impl Plugin for TerrariumPlugin {
         app.init_resource::<TimeOfDay>()
             .init_resource::<WeatherState>()
             .init_resource::<BehaviorSignals>()
-            .init_resource::<DebugSettings>()
             .add_message::<PlantStageChanged>()
             .add_message::<CritterArrived>()
             .add_message::<CritterDeparted>()
@@ -43,7 +42,7 @@ impl Plugin for TerrariumPlugin {
                     systems::critter_spawner::critter_spawner_system,
                     systems::critter_movement::critter_movement_system,
                     systems::persistence::save_state_system,
-                    systems::debug_ui::debug_input_system,
+                    systems::persistence::save_state_on_exit_system,
                 ),
             )
             .add_systems(

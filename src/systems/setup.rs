@@ -22,7 +22,6 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_xyz(0.0, 0.0, 0.0),
         SceneLayer {
             depth_factor: 0.0, // No parallax for backdrop
-            time_variant: None,
         },
     ));
 
@@ -37,10 +36,7 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             Transform::from_xyz(0.0, 0.0, 10.0),
-            SceneLayer {
-                depth_factor: 0.3,
-                time_variant: None, // Will be set up properly when we implement time system
-            },
+            SceneLayer { depth_factor: 0.3 },
             TimeVariantTag {
                 layer_id: 0, // glass_container
                 phase: phase as u8,
@@ -58,10 +54,7 @@ pub fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             Transform::from_xyz(0.0, 0.0, 20.0),
-            SceneLayer {
-                depth_factor: 0.6,
-                time_variant: None, // Will be set up properly when we implement time system
-            },
+            SceneLayer { depth_factor: 0.6 },
             TimeVariantTag {
                 layer_id: 1, // soil
                 phase: phase as u8,

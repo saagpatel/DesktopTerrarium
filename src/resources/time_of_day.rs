@@ -22,17 +22,6 @@ impl Default for TimeOfDay {
 }
 
 impl TimeOfDay {
-    /// Returns the name of the current phase for asset loading.
-    pub fn phase_name(&self) -> &'static str {
-        match self.phase {
-            0 => "morning",
-            1 => "day",
-            2 => "evening",
-            3 => "night",
-            _ => unreachable!(), // phase is always mod 4
-        }
-    }
-
     /// Returns (current_phase, next_phase, blend_factor) for crossfading.
     /// blend_factor is 0.0 at phase start (show current fully) and approaches 1.0
     /// in the last 20% of the phase (fade toward next).
