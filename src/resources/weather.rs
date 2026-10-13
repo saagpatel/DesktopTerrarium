@@ -23,6 +23,25 @@ pub enum WeatherType {
     Wind,
 }
 
+pub fn weather_transition_factor(
+    current: WeatherType,
+    target: WeatherType,
+    progress: f32,
+    particle_weather: WeatherType,
+) -> f32 {
+    if current == particle_weather {
+        if target == particle_weather {
+            1.0
+        } else {
+            1.0 - progress.clamp(0.0, 1.0)
+        }
+    } else if target == particle_weather {
+        progress.clamp(0.0, 1.0)
+    } else {
+        0.0
+    }
+}
+
 impl WeatherType {
     /// Deterministic next weather in the cycle.
     pub fn next(self) -> Self {

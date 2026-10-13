@@ -1,6 +1,5 @@
 use crate::components::RainDrop;
-use crate::resources::WeatherState;
-use crate::resources::WeatherType;
+use crate::resources::{weather_transition_factor, WeatherState, WeatherType};
 use bevy::prelude::*;
 use rand::RngExt;
 
@@ -31,15 +30,12 @@ pub fn rain_spawn_system(
     }
 
     // Adjust spawn rate based on transition
-    let spawn_multiplier = if weather.current == WeatherType::Rain {
-        if weather.target == WeatherType::Rain {
-            1.0 // Fully raining
-        } else {
-            1.0 - weather.transition_progress // Fading out
-        }
-    } else {
-        weather.transition_progress // Fading in
-    };
+    let spawn_multiplier = weather_transition_factor(
+        weather.current,
+        weather.target,
+        weather.transition_progress,
+        WeatherType::Rain,
+    );
 
     if spawn_multiplier <= 0.0 {
         return;
@@ -87,12 +83,5 @@ pub fn rain_update_system(
         if drop.lifetime <= 0.0 || transform.translation.y < -320.0 {
             commands.entity(entity).despawn();
         }
-    }
-}
-
-// Entity count safety check
-pub fn rain_limit_system(rain: Query<Entity, With<RainDrop>>) {
-    if rain.iter().count() > 200 {
-        warn!("Rain particle count exceeded 200, consider reducing spawn rate");
     }
 }
